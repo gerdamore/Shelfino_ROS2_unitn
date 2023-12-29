@@ -99,6 +99,7 @@ def generate_launch_description():
     shelfino_nav2_pkg  = get_package_share_directory('shelfino_navigation')
     shelfino_gaze_pkg  = get_package_share_directory('shelfino_gazebo')
     map_env_pkg        = get_package_share_directory('map_pkg')
+    planning_pkg       = get_package_share_directory('path_planning')
 
     nav2_params_file_path = os.path.join(shelfino_nav2_pkg, 'config', 'shelfino.yaml')
     map_env_params_file_path = os.path.join(map_env_pkg, 'config', 'map_config.yaml')
@@ -237,6 +238,16 @@ def generate_launch_description():
         ],
     )
 
+    planner_node = Node (
+        package='path_planning',
+        executable='ntp',
+        name='ntp',
+        output='screen',
+        parameters=[
+            {'use_sim_time': use_sim_time}
+        ],
+    )
+
     def populate(context):
         nodes = []
         print(__file__)
@@ -319,5 +330,6 @@ def generate_launch_description():
     nodes = OpaqueFunction(function=populate)
     ld.add_action(nodes)
     ld.add_action(rviz2_node)
+    ld.add_action(planner_node)
 
     return ld
