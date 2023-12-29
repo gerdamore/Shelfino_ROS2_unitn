@@ -99,6 +99,7 @@ def generate_launch_description():
     shelfino_nav2_pkg  = get_package_share_directory('shelfino_navigation')
     shelfino_gaze_pkg  = get_package_share_directory('shelfino_gazebo')
     map_env_pkg        = get_package_share_directory('map_pkg')
+    planning_pkg       = get_package_share_directory('path_planning')
 
     nav2_params_file_path = os.path.join(shelfino_nav2_pkg, 'config', 'shelfino.yaml')
     map_env_params_file_path = os.path.join(map_env_pkg, 'config', 'map_config.yaml')
@@ -228,50 +229,17 @@ def generate_launch_description():
         ],
     )
 
-    def launch_rsp(context):
-        nodes = []
-        for shelfino_id in range(int(context.launch_configurations['n_shelfini'])):
-            
-            shelfino_name = PythonExpression(["'", "shelfino", str(shelfino_id), "'"])
-    
-            rsp_node = IncludeLaunchDescription(
-                PythonLaunchDescriptionSource([
-                    os.path.join(shelfino_desc_pkg, 'launch'),
-                    '/rsp.launch.py']
-                ),
-                launch_arguments= {
-                    'use_sim_time': use_sim_time,
-                    'shelfino_id': str(shelfino_id),
-                }.items()
-            )
-            nodes.append(rsp_node)
+    planner_node = Node (
+        package='path_planning',
+        executable='ntp',
+        name='ntp',
+        output='screen',
+        parameters=[
+            {'use_sim_time': use_sim_time}
+        ],
+    )
 
-        return nodes
-    
-    def spawn_shelfini(context):
-        nodes = []
-        for shelfino_id in range(int(context.launch_configurations['n_shelfini'])):
-            
-            shelfino_name = PythonExpression(["'", "shelfino", str(shelfino_id), "'"])
-    
-            spawn_node = Node(
-                package='gazebo_ros',
-                executable='spawn_entity.py',
-                arguments=[
-                        '-topic', PythonExpression(["'/", shelfino_name, "/robot_description", "'"]),
-                        '-entity', shelfino_name,
-                        '-robot_namespace', shelfino_name,
-                        '-x', str(shelfino_id*1.5-1.5),
-                        '-y', '0.0',
-                        '-z', '0.0',
-                        '-Y', '0.0',
-                ]
-            )
-            nodes.append(spawn_node)
-
-        return nodes
-
-    def launch_navigation(context):
+    def populate(context):
         nodes = []
         for shelfino_id in range(int(context.launch_configurations['n_shelfini'])):
             
@@ -321,36 +289,9 @@ def generate_launch_description():
 
     ld.add_action(gazebo_launch)
     ld.add_action(map_pkg_node)
-    
-    ld.add_action(TimerAction(
-        period='2',
-        actions = [create_map_node]
-    ))
-    
-    ld.add_action(TimerAction(
-        period='5',
-        actions = [OpaqueFunction(function=launch_rsp)]
-    ))
-    ld.add_action(TimerAction(
-        period='10',
-        actions = [OpaqueFunction(function=spawn_shelfini)]
-    ))
-
-    ld.add_action(TimerAction(
-        period='15',
-        actions = [rviz2_node]
-    ))
-
-    ld.add_action(TimerAction(
-        period='20',
-        actions = [OpaqueFunction(function=launch_navigation)]
-    ))
-
-
-
-    # ld.add_action(map_pkg_node)
-    # nodes = OpaqueFunction(function=populate)
-    # ld.add_action(nodes)
-    # ld.add_action(rviz2_node)
+    nodes = OpaqueFunction(function=populate)
+    ld.add_action(nodes)
+    ld.add_action(rviz2_node)
+    ld.add_action(planner_node)
 
     return ld

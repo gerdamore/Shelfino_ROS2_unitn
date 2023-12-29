@@ -18,6 +18,7 @@
   <depend>shelfino_gazebo</depend>
   <depend>shelfino_description</depend>
   <depend>shelfino_navigation</depend>
+  <depend>path_planning</depend>
   <!-- <depend>evader</depend> -->
   <depend>map_pkg</depend>
 
