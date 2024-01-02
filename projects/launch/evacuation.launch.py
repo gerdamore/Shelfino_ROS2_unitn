@@ -240,8 +240,8 @@ def generate_launch_description():
 
     planner_node = Node (
         package='path_planning',
-        executable='ntp',
-        name='ntp',
+        executable='Follow_path',
+        name='Follow_path',
         output='screen',
         parameters=[
             {'use_sim_time': use_sim_time}

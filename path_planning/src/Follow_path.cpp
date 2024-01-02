@@ -32,7 +32,7 @@ private:
         full_path.header.stamp = this->now();
         full_path.header.frame_id = "map";
         std::vector<geometry_msgs::msg::PoseStamped> poses_temp;
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 20; i++)
         {
             geometry_msgs::msg::PoseStamped p_tmp;
             p_tmp.header.stamp = this->now();
@@ -69,35 +69,8 @@ int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<MinimalSubscriber>();
-<<<<<<< HEAD
 
-    RCLCPP_INFO(node->get_logger(), "msg sending started");
-    nav_msgs::msg::Path full_path;
-    full_path.header.stamp = node->get_clock()->now();
-    full_path.header.frame_id = "map";
-    std::vector<geometry_msgs::msg::PoseStamped> poses_temp;
-    for (int i = 0; i < 100; i++)
-    {
-        poses_temp.push_back(create_pose(node, 0.1 * i));
-    }
-    full_path.poses = poses_temp;
-    RCLCPP_INFO(node->get_logger(), "Connect to server");
-    if (!node->client_ptr_->wait_for_action_server())
-    {
-        RCLCPP_ERROR(node->get_logger(), "Action server not available after waiting");
-        rclcpp::shutdown();
-    }
-
-    auto goal_msg = FollowPath::Goal();
-    goal_msg.path = full_path;
-    goal_msg.controller_id = "FollowPath";
-    RCLCPP_INFO(node->get_logger(), "Sending msg");
-    node->client_ptr_->async_send_goal(goal_msg);
-
-    rclcpp::spin_some(node);
-=======
     rclcpp::spin(node);
->>>>>>> 3f95783 (Import path planning node into project)
     rclcpp::shutdown();
     return 0;
 }

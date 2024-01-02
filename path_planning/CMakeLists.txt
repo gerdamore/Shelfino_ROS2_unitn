@@ -17,13 +17,13 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(rclcpp_action REQUIRED)
 
-add_executable(ntp src/publisher_member_function.cpp)
-#add_executable(Follow_path src/Follow_path.cpp)
-ament_target_dependencies(ntp rclcpp std_msgs geometry_msgs nav2_msgs rclcpp_action)
-#ament_target_dependencies(Follow_path rclcpp std_msgs geometry_msgs nav2_msgs rclcpp_action)
+#add_executable(ntp src/publisher_member_function.cpp)
+add_executable(Follow_path src/Follow_path.cpp)
+#ament_target_dependencies(ntp rclcpp std_msgs geometry_msgs nav2_msgs rclcpp_action)
+ament_target_dependencies(Follow_path rclcpp std_msgs geometry_msgs nav2_msgs rclcpp_action)
 install(TARGETS
-  ntp
-#  Follow_path
+#  ntp
+  Follow_path
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
