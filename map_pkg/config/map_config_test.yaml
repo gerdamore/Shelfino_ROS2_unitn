@@ -21,9 +21,9 @@
 
 /**:
   ros__parameters:
-    map: hexagon #hexagon, rectangle
+    map: rectangle #hexagon, rectangle
     dx: 5.0
-    dy: 10.0
+    dy: 5.0
     max_timeout: 3
     qos_overrides:
       /parameter_events:

@@ -1,19 +1,9 @@
-#include <memory>
-
-#include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/string.hpp"
-#include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
-#include "nav2_msgs/action/follow_path.hpp"
-#include "nav2_msgs/action/navigate_to_pose.hpp"
-#include "nav_msgs/msg/path.hpp"
-#include "geometry_msgs/msg/pose_array.hpp"
-#include "rclcpp_action/rclcpp_action.hpp"
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <algorithm>
 
 using namespace std;
-using std::placeholders::_1;
-using FollowPath = nav2_msgs::action::FollowPath;
-
-typedef std::pair<double, double> Point2d;
 
 class RRTNode
 {
@@ -49,10 +39,9 @@ public:
 
     // node << operator
 };
-
+typedef std::pair<double, double> Point2d;
 #define MAX_ITER 25
-#define GOAL_PROBABILITY 10
-
+#define GOAL_SAMPLE_RATE 5
 class RRT
 {
 public:
@@ -85,7 +74,7 @@ public:
         for (int i = 0; i < MAX_ITER - 1; i++)
         {
             RRTNode rnd = get_random_node();
-            int nearest_ind = get_closest_index(rnd);
+            int nearest_ind = get_closest_index(node_list, rnd);
             RRTNode new_node = get_path(&node_list[nearest_ind], rnd, nearest_ind);
             print_node(i, new_node);
             node_list.push_back(new_node);
@@ -104,9 +93,8 @@ public:
 private:
     double get_distance(double x, double y, double end_x, double end_y)
     {
-        double dx = x - end_x;
-        double dy = y - end_y;
-        return std::hypot(dx, dy);
+        double distance = pow(end_x - end_x, 2) + pow(end_y - y, 2);
+        return distance;
     }
 
     std::vector<Point2d> get_final_path(RRTNode node)
@@ -120,6 +108,7 @@ private:
             double ix = node.path_x[i];
             double iy = node.path_y[i];
             path.push_back(Point2d(ix, iy));
+            cout << "ix: " << ix << ", iy: " << iy << endl;
         }
         RRTNode parent_node = node_list[node.parent];
         int i = 0;
@@ -133,23 +122,26 @@ private:
                 double ix = parent_node.path_x[i];
                 double iy = parent_node.path_y[i];
                 path.push_back(Point2d(ix, iy));
+                cout << "ix: " << ix << ", iy: " << iy << endl;
             }
             int parent_index = parent_node.parent;
             parent_node.parent = -1;
             parent_node = node_list[parent_index];
         }
         path.push_back(Point2d(start.x, start.y));
-        cout << "Path: " << endl;
-        for (int i = 0; i < path.size(); i++)
-        {
-            cout << "x: " << path[i].first << ", y: " << path[i].second << endl;
-        }
         return path;
+    }
+
+    double calc_dist_to_goal(double x, double y, double end_x, double end_y)
+    {
+        double dx = x - end_x;
+        double dy = y - end_y;
+        return std::hypot(dx, dy);
     }
 
     RRTNode get_shortest_path()
     {
-        // cout << end.x << ", " << end.y << endl;
+        cout << end.x << ", " << end.y << endl;
         std::vector<int> goal_indexes;
         for (int i = 0; i < node_list.size(); i++)
         {
@@ -171,7 +163,7 @@ private:
         int best_goal_index = goal_indexes[0];
         for (int i : goal_indexes)
         {
-            // cout << "i: " << i << ", cost: " << node_list[i].cost << endl;
+            cout << "i: " << i << ", cost: " << node_list[i].cost << endl;
             if (node_list[i].cost < min_cost)
             {
                 min_cost = node_list[i].cost;
@@ -214,7 +206,7 @@ private:
 
     RRTNode get_random_node()
     {
-        if (rand() % 100 > GOAL_PROBABILITY)
+        if (rand() % 100 > 10)
         {
             double rnd_x = ((double)rand() / RAND_MAX) * (max_rand - min_rand) + min_rand;
             double rnd_y = ((double)rand() / RAND_MAX) * (max_rand - min_rand) + min_rand;
@@ -227,15 +219,16 @@ private:
         }
     }
 
-    int get_closest_index(RRTNode rnd_node)
+    int get_closest_index(std::vector<RRTNode> node_list, RRTNode rnd_node)
     {
         std::vector<double> dlist;
         for (const auto &node : node_list)
         {
-            double distance = get_distance(node.x, node.y, rnd_node.x, rnd_node.y);
+            double distance = pow(node.x - rnd_node.x, 2) + pow(node.y - rnd_node.y, 2);
             dlist.push_back(distance);
         }
 
+        // search for the smallest element in dlist and return its index
         std::vector<double>::iterator result = std::min_element(std::begin(dlist), std::end(dlist));
         return std::distance(std::begin(dlist), result);
     }
@@ -248,115 +241,16 @@ private:
     double max_rand;
 };
 
-class MinimalSubscriber : public rclcpp::Node
+int initial_x_ = 0;
+int initial_y_ = 0;
+int goal_x_ = 2;
+int goal_y_ = 2;
+
+int main()
 {
-public:
-    MinimalSubscriber()
-        : Node("minimal_subscriber")
-    {
-        client_ptr_ = rclcpp_action::create_client<FollowPath>(this, "/shelfino0/follow_path");
-        subscription_ = this->create_subscription<std_msgs::msg::String>(
-            "/topic_fp", 10, std::bind(&MinimalSubscriber::topic_callback, this, _1));
-        subscription_gates_ = this->create_subscription<geometry_msgs::msg::PoseArray>(
-            "/gate_position", 10, std::bind(&MinimalSubscriber::callback, this, std::placeholders::_1));
-        subscription_initial_pose_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
-            "/shelfino0/amcl_pose", 10, std::bind(&MinimalSubscriber::topic_callback_init_pose, this, _1));
-        RCLCPP_INFO(this->get_logger(), "Finished setting up listener");
-    }
-
-private:
-    void plan_path() const
-    {
-        RRTNode start(initial_x_, initial_y_, 0);
-        RRTNode goal(goal_x_, goal_y_, 0);
-        std::vector<double> boundary = {-10, 10};
-        RRT rrt(start, goal, boundary);
-        std::vector<Point2d> path = rrt.planning();
-    }
-
-    void topic_callback(const std_msgs::msg::String::SharedPtr msg) const
-    {
-
-        RCLCPP_INFO(this->get_logger(), "Start path planning");
-        plan_path();
-        //  nav_msgs::msg::Path full_path;
-        //  full_path.header.stamp = this->now();
-        //  full_path.header.frame_id = "map";
-        //  std::vector<geometry_msgs::msg::PoseStamped> poses_temp;
-        //  for (int i = 0; i < 20; i++)
-        //  {
-        //      geometry_msgs::msg::PoseStamped p_tmp;
-        //      p_tmp.header.stamp = this->now();
-        //      p_tmp.header.frame_id = "map";
-        //      p_tmp.pose.position.x = 0.0;
-        //      p_tmp.pose.position.y = 0.1 * i;
-        //      p_tmp.pose.position.z = 0.0;
-        //      p_tmp.pose.orientation.x = 0.0;
-        //      p_tmp.pose.orientation.y = 0.0;
-        //      p_tmp.pose.orientation.z = 0.0;
-        //      p_tmp.pose.orientation.w = 1.0;
-        //      poses_temp.push_back(p_tmp);
-        //  }
-        //  full_path.poses = poses_temp;
-        //  RCLCPP_INFO(this->get_logger(), "Connect to server");
-        //  if (!this->client_ptr_->wait_for_action_server())
-        //  {
-        //      RCLCPP_ERROR(this->get_logger(), "Action server not available after waiting");
-        //      rclcpp::shutdown();
-        //  }
-
-        // auto goal_msg = FollowPath::Goal();
-        // goal_msg.path = full_path;
-        // goal_msg.controller_id = "FollowPath";
-        // RCLCPP_INFO(this->get_logger(), "Sending msg");
-        // this->client_ptr_->async_send_goal(goal_msg);
-    }
-
-    void callback(const geometry_msgs::msg::PoseArray::SharedPtr msg)
-    {
-        for (const auto &pose : msg->poses)
-        {
-            goal_x_ = pose.position.x;
-            MinimalSubscriber::goal_y_ = pose.position.y;
-            if (goal_x_ < 0)
-                goal_x_ += 0.5;
-            else
-                goal_x_ -= 0.5;
-
-            if (goal_y_ < 0)
-                goal_y_ += 0.5;
-            else
-                goal_y_ -= 0.5;
-
-            RCLCPP_INFO(this->get_logger(), "Goal pose - x: %f, y: %f", goal_x_, goal_y_);
-        }
-    }
-
-    void topic_callback_init_pose(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
-    {
-        initial_x_ = msg->pose.pose.position.x;
-        initial_y_ = msg->pose.pose.position.y;
-
-        // Print the x, y coordinates
-        RCLCPP_INFO(get_logger(), "Received pose - x: %f, y: %f", initial_x_, initial_y_);
-    }
-
-    rclcpp_action::Client<FollowPath>::SharedPtr client_ptr_;
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
-    rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr subscription_gates_;
-    rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr subscription_initial_pose_;
-    double goal_x_;
-    double goal_y_;
-    double initial_x_;
-    double initial_y_;
-};
-
-int main(int argc, char *argv[])
-{
-    rclcpp::init(argc, argv);
-    auto node = std::make_shared<MinimalSubscriber>();
-
-    rclcpp::spin(node);
-    rclcpp::shutdown();
-    return 0;
+    RRTNode start(initial_x_, initial_y_, 0);
+    RRTNode goal(goal_x_, goal_y_, 0);
+    std::vector<double> boundary = {-3.1, 3.1};
+    RRT rrt(start, goal, boundary);
+    std::vector<Point2d> path = rrt.planning();
 }
