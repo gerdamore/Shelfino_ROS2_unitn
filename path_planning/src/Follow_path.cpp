@@ -23,6 +23,8 @@ public:
             "topic_fp", 10, std::bind(&MinimalSubscriber::topic_callback, this, _1));
         subscription_gates_ = this->create_subscription<geometry_msgs::msg::PoseArray>(
             "/gate_position", 10, std::bind(&MinimalSubscriber::callback, this, std::placeholders::_1));
+        subscription_initial_pose_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
+            "/shelfino0/amcl_pose", 10, std::bind(&MinimalSubscriber::topic_callback_init_pose, this, _1));
         RCLCPP_INFO(this->get_logger(), "Finished setting up listener");
     }
 
@@ -84,11 +86,23 @@ private:
         }
     }
 
+    void topic_callback_init_pose(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
+    {
+        initial_x_ = msg->pose.pose.position.x;
+        initial_y_ = msg->pose.pose.position.y;
+
+        // Print the x, y coordinates
+        RCLCPP_INFO(get_logger(), "Received pose - x: %f, y: %f", initial_x_, initial_y_);
+    }
+
     rclcpp_action::Client<FollowPath>::SharedPtr client_ptr_;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
     rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr subscription_gates_;
+    rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr subscription_initial_pose_;
     double goal_x_;
     double goal_y_;
+    double initial_x_;
+    double initial_y_;
 };
 
 int main(int argc, char *argv[])
