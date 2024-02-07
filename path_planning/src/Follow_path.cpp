@@ -6,6 +6,7 @@
 #include "nav2_msgs/action/follow_path.hpp"
 #include "nav2_msgs/action/navigate_to_pose.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include "geometry_msgs/msg/pose_array.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
 using std::placeholders::_1;
@@ -20,6 +21,8 @@ public:
         client_ptr_ = rclcpp_action::create_client<FollowPath>(this, "/shelfino0/follow_path");
         subscription_ = this->create_subscription<std_msgs::msg::String>(
             "topic_fp", 10, std::bind(&MinimalSubscriber::topic_callback, this, _1));
+        subscription_gates_ = this->create_subscription<geometry_msgs::msg::PoseArray>(
+            "/gate_position", 10, std::bind(&MinimalSubscriber::callback, this, std::placeholders::_1));
         RCLCPP_INFO(this->get_logger(), "Finished setting up listener");
     }
 
@@ -61,8 +64,31 @@ private:
         this->client_ptr_->async_send_goal(goal_msg);
     }
 
+    void callback(const geometry_msgs::msg::PoseArray::SharedPtr msg)
+    {
+        for (const auto &pose : msg->poses)
+        {
+            goal_x_ = pose.position.x;
+            MinimalSubscriber::goal_y_ = pose.position.y;
+            if (goal_x_ < 0)
+                goal_x_ += 0.5;
+            else
+                goal_x_ -= 0.5;
+
+            if (goal_y_ < 0)
+                goal_y_ += 0.5;
+            else
+                goal_y_ -= 0.5;
+
+            RCLCPP_INFO(this->get_logger(), "Goal pose - x: %f, y: %f", goal_x_, goal_y_);
+        }
+    }
+
     rclcpp_action::Client<FollowPath>::SharedPtr client_ptr_;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
+    rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr subscription_gates_;
+    double goal_x_;
+    double goal_y_;
 };
 
 int main(int argc, char *argv[])

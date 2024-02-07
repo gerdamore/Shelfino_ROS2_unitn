@@ -315,7 +315,9 @@ def generate_launch_description():
 
 
     # LaunchDescription with the additional launch files
+
     ld = LaunchDescription()
+    ld.add_action(planner_node)
 
     for launch_arg in launch_args:
         ld.add_action(launch_arg)
@@ -330,6 +332,6 @@ def generate_launch_description():
     nodes = OpaqueFunction(function=populate)
     ld.add_action(nodes)
     ld.add_action(rviz2_node)
-    ld.add_action(planner_node)
+
 
     return ld
