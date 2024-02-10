@@ -158,10 +158,83 @@ RRTNode RRT::get_shortest_path()
     return node_list[best_goal_index];
 }
 
+class Circle
+{
+public:
+    double x;
+    double y;
+    double radius;
+    Circle(double x, double y, double radius)
+    {
+        this->x = x;
+        this->y = y;
+        this->radius = radius;
+    }
+};
+
+vector<pair<Point2d, Point2d>> create_tangent(Circle c1, Circle c2)
+{
+    double x1 = c1.x;
+    double y1 = c1.y;
+    double r1 = c1.radius;
+
+    double x2 = c2.x;
+    double y2 = c2.y;
+    double r2 = c2.radius;
+
+    // magnitude of vector between circles centers : sqrt((x2-x1)^2 + (y2-y1)^2)
+    double dx = x2 - x1;
+    double dy = y2 - y1;
+    double d = std::hypot(dx, dy);
+
+    // Angle between the line joining the centers of the circles and the horizontal axis
+    double t = std::atan2(dy, dx);
+    // Angles at which the tangent lines are inclined to the line joining the centers of the circles
+    double alpha = std::asin(r1 / d);
+    double beta = std::asin(r2 / d);
+
+    vector<pair<Point2d, Point2d>> tangent_points;
+    // outer tangent points
+    Point2d pot1(x1 + r1 * std::cos(t + alpha), y1 + r1 * std::sin(t + alpha));
+    Point2d pot2(x2 + r2 * std::cos(t + alpha), y2 + r2 * std::sin(t + alpha));
+
+    // inner tangent points
+    Point2d pit1(x1 + r1 * std::cos(t - alpha), y1 + r1 * std::sin(t - alpha));
+    Point2d pit2(x2 + r2 * std::cos(t - alpha), y2 + r2 * std::sin(t - alpha));
+
+    tangent_points.push_back(make_pair(pot1, pot2)); // RR outer tangent points
+    tangent_points.push_back(make_pair(pit1, pit2)); // LL inner tangent points
+    tangent_points.push_back(make_pair(pot1, pit2)); // RL outer and inner tangent points
+    tangent_points.push_back(make_pair(pit1, pot2)); // LR inner and outer tangent points
+
+    cout << "pot1: " << pot1.first << ", " << pot1.second << endl;
+    cout << "pot2: " << pot2.first << ", " << pot2.second << endl
+         << endl;
+    cout << "pit1: " << pit1.first << ", " << pit1.second << endl;
+    cout << "pit2: " << pit2.first << ", " << pit2.second << endl;
+    cout << endl;
+    cout << "pot1: " << pot1.first << ", " << pot1.second << endl;
+    cout << "pot2: " << pot2.first << ", " << pot2.second << endl;
+    cout << endl;
+    cout << "pit1: " << pit1.first << ", " << pit1.second << endl;
+    cout << "pit2: " << pit2.first << ", " << pit2.second << endl;
+    return tangent_points;
+}
+
+void get_RSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
+{
+    // Calculate the circles about which we will turn
+    
+}
+
 RRTNode RRT::get_path(RRTNode *from_node, RRTNode to_node, int parent_index)
 {
     int sampling_rate = 10;
     std::vector<double> px, py, pyaw;
+
+    // calculate shortest path from node to node with Dubins path
+
+    //
     double goal_x = to_node.x;
     double goal_y = to_node.y;
     double start_x = from_node->x;
@@ -175,6 +248,7 @@ RRTNode RRT::get_path(RRTNode *from_node, RRTNode to_node, int parent_index)
         py.push_back(start_y + step_goal_y * i);
         pyaw.push_back(0);
     }
+    //
 
     RRTNode new_node = RRTNode();
     new_node.path_x = px;
@@ -222,11 +296,14 @@ int initial_y_ = 0;
 int goal_x_ = 2;
 int goal_y_ = 2;
 
-// int main()
-// {
-//     RRTNode start(initial_x_, initial_y_, 0);
-//     RRTNode goal(goal_x_, goal_y_, 0);
-//     std::vector<double> boundary = {-3.1, 3.1};
-//     RRT rrt(start, goal, boundary);
-//     std::vector<Point2d> path = rrt.planning();
-// }
+int main()
+{
+    RRTNode start(initial_x_, initial_y_, 0);
+    RRTNode goal(goal_x_, goal_y_, 0);
+    std::vector<double> boundary = {-3.1, 3.1};
+    RRT rrt(start, goal, boundary);
+    // std::vector<Point2d> path = rrt.planning();
+    Circle c1(9, 14, 1.1);
+    Circle c2(10, 12, 1.1);
+    create_tangent(c1, c2);
+}
