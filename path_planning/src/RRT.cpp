@@ -170,6 +170,12 @@ public:
         this->y = y;
         this->radius = radius;
     }
+    Circle()
+    {
+        this->x = 0;
+        this->y = 0;
+        this->radius = 0;
+    }
 };
 
 #define WHEELBASE 1
@@ -221,21 +227,21 @@ vector<pair<Point2d, Point2d>> create_tangent(Circle _c1, Circle _c2)
 }
 
 #define PI 3.14159265
+double start_x = 0;
+double start_y = 0;
+double start_theta = 0;
 
-void get_RSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
+double goal_x = 0;
+double goal_y = 0;
+double goal_theta = 0;
+
+double get_RSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
 {
-    double start_x = 0;
-    double start_y = 0;
-    double start_theta = 0;
-
-    double goal_x = 3;
-    double goal_y = 3;
-    double goal_theta = 0;
 
     if (tangent_points.size() == 0)
     {
         cout << "No tangent points found" << endl;
-        return;
+        return INFINITY;
     }
 
     Point2d vec1, vec2;
@@ -279,23 +285,16 @@ void get_RSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circl
     cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
     cout << "arclength_ahead: " << arclength_ahead << ", timesteps_ahead: " << timesteps_ahead << endl;
     cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
-    cout << arclength1 + arclength + arclength_ahead << endl;
+    return (arclength1 + arclength + arclength_ahead);
 }
 
-void get_RSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
+double get_RSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
 {
-    double start_x = 0;
-    double start_y = 0;
-    double start_theta = 0;
-
-    double goal_x = 3;
-    double goal_y = 3;
-    double goal_theta = 0;
 
     if (tangent_points.size() == 0)
     {
         cout << "No tangent points found" << endl;
-        return;
+        return INFINITY;
     }
 
     Point2d vec1, vec2;
@@ -339,23 +338,15 @@ void get_RSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circl
     cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
     cout << "arclength_ahead: " << arclength_ahead << ", timesteps_ahead: " << timesteps_ahead << endl;
     cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
-    cout << arclength1 + arclength + arclength_ahead << endl;
+    return (arclength1 + arclength + arclength_ahead);
 }
 
-void get_LSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
+double get_LSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
 {
-    double start_x = 0;
-    double start_y = 0;
-    double start_theta = 0;
-
-    double goal_x = 3;
-    double goal_y = 3;
-    double goal_theta = 0;
-
     if (tangent_points.size() == 0)
     {
         cout << "No tangent points found" << endl;
-        return;
+        return INFINITY;
     }
 
     Point2d vec1, vec2;
@@ -399,23 +390,16 @@ void get_LSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circl
     cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
     cout << "arclength_ahead: " << arclength_ahead << ", timesteps_ahead: " << timesteps_ahead << endl;
     cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
-    cout << arclength1 + arclength + arclength_ahead << endl;
+    return (arclength1 + arclength + arclength_ahead);
 }
 
-void get_LSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
+double get_LSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
 {
-    double start_x = 0;
-    double start_y = 0;
-    double start_theta = 0;
-
-    double goal_x = 3;
-    double goal_y = 3;
-    double goal_theta = 0;
 
     if (tangent_points.size() == 0)
     {
         cout << "No tangent points found" << endl;
-        return;
+        return INFINITY;
     }
 
     Point2d vec1, vec2;
@@ -456,10 +440,83 @@ void get_LSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circl
     double arclength1 = fabs(MINRADIUS * theta1);
     double timesteps1 = arclength1 / DELTA;
 
-    cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
-    cout << "arclength_ahead: " << arclength_ahead << ", timesteps_ahead: " << timesteps_ahead << endl;
-    cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
-    cout << arclength1 + arclength + arclength_ahead << endl;
+    // cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
+    // cout << "arclength_ahead: " << arclength_ahead << ", timesteps_ahead: " << timesteps_ahead << endl;
+    // cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
+    return (arclength1 + arclength + arclength_ahead);
+}
+
+void get_CSCPath()
+{
+    Circle start_left;
+    Circle start_right;
+    Circle end_left;
+    Circle end_right;
+
+    double theta = start_theta;
+    theta += PI / 2.0;
+    if (theta > PI)
+        theta -= 2.0 * PI;
+
+    start_left.x = start_x + MINRADIUS * cos(theta);
+    start_left.y = start_y + MINRADIUS * sin(theta);
+    start_left.radius = MINRADIUS;
+
+    theta = start_theta;
+    theta -= PI / 2.0;
+    if (theta < -PI)
+        theta += 2.0 * PI;
+
+    start_right.x = start_x + MINRADIUS * cos(theta);
+    start_right.y = start_y + MINRADIUS * sin(theta);
+    start_right.radius = MINRADIUS;
+
+    theta = goal_theta;
+    theta += PI / 2.0;
+    if (theta > PI)
+        theta -= 2.0 * PI;
+
+    end_left.x = goal_x + MINRADIUS * cos(theta);
+    end_left.y = goal_y + MINRADIUS * sin(theta);
+    end_left.radius = MINRADIUS;
+
+    theta = goal_theta;
+    theta -= PI / 2.0;
+    if (theta < -PI)
+        theta += 2.0 * PI;
+
+    end_right.x = goal_x + MINRADIUS * cos(theta);
+    end_right.y = goal_y + MINRADIUS * sin(theta);
+    end_right.radius = MINRADIUS;
+
+    // print Circles
+    cout << "start_left: " << start_left.x << ", " << start_left.y << endl;
+    cout << "start_right: " << start_right.x << ", " << start_right.y << endl;
+    cout << "end_left: " << end_left.x << ", " << end_left.y << endl;
+    cout << "end_right: " << end_right.x << ", " << end_right.y << endl;
+    
+    // RSR
+    vector<pair<Point2d, Point2d>> tangent_points = create_tangent(start_right, end_right);
+    double RSR_length = get_RSRPath(tangent_points, start_right, end_right);
+    // RSL
+    tangent_points = create_tangent(start_right, end_left);
+    double RSL_length = get_RSLPath(tangent_points, start_right, end_left);
+    // LSR
+    tangent_points = create_tangent(start_left, end_right);
+    double LSR_length = get_LSRPath(tangent_points, start_left, end_right);
+    // LSL
+    tangent_points = create_tangent(start_left, end_left);
+    double LSL_length = get_LSLPath(tangent_points, start_left, end_left);
+
+    // get the smallest length
+    // print lenghts
+    cout << "RSR_length: " << RSR_length << endl;
+    cout << "RSl_length: " << RSL_length << endl;
+    cout << "LSR_length: " << LSR_length << endl;
+    cout << "LSL_length: " << LSL_length << endl;
+
+    double min_length = min(RSR_length, min(RSL_length, min(LSR_length, LSL_length)));
+    cout << "min_length: " << min_length << endl;
 }
 
 RRTNode RRT::get_path(RRTNode *from_node, RRTNode to_node, int parent_index)
@@ -531,15 +588,13 @@ int initial_y_ = 0;
 int goal_x_ = 2;
 int goal_y_ = 2;
 
-int main()
+int main(int argc, char *argv[])
 {
     RRTNode start(initial_x_, initial_y_, 0);
     RRTNode goal(goal_x_, goal_y_, 0);
     std::vector<double> boundary = {-3.1, 3.1};
     RRT rrt(start, goal, boundary);
-    // std::vector<Point2d> path = rrt.planning();
-    Circle c1(1.97, -1.1, 1.1);
-    Circle c2(3, 1.9, 1.1);
-    vector<pair<Point2d, Point2d>> tangent_points = create_tangent(c1, c2);
-    get_LSRPath(tangent_points, c1, c2);
+    goal_x = std::stod(argv[1]);
+    goal_y = std::stod(argv[2]);
+    get_CSCPath();
 }
