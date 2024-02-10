@@ -33,8 +33,6 @@ public:
     std::vector<Point2d> planning();
 
 private:
-    double get_distance(double x, double y, double end_x, double end_y);
-
     std::vector<Point2d> get_final_path(RRTNode node);
 
     double calc_dist_to_goal(double x, double y, double end_x, double end_y);

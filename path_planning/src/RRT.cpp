@@ -74,7 +74,7 @@ std::vector<Point2d> RRT::planning()
     return get_final_path(shortest);
 }
 
-double RRT::get_distance(double x, double y, double end_x, double end_y)
+double get_distance(double x, double y, double end_x, double end_y)
 {
     double dx = x - end_x;
     double dy = y - end_y;
@@ -175,60 +175,111 @@ public:
 #define WHEELBASE 1
 #define MINRADIUS 1.1
 #define MAXSTEER asin(WHEELBASE / MINRADIUS)
-#define DELTA 0.1
+#define DELTA 0.05
 
-vector<pair<Point2d, Point2d>> create_tangent(Circle c1, Circle c2)
+vector<pair<Point2d, Point2d>> create_tangent(Circle _c1, Circle _c2)
 {
-    double x1 = c1.x;
-    double y1 = c1.y;
-    double r1 = c1.radius;
+    double x1 = _c1.x;
+    double y1 = _c1.y;
+    double x2 = _c2.x;
+    double y2 = _c2.y;
+    double r1 = _c1.radius;
+    double r2 = _c2.radius;
+    double d_sq = pow(x2 - x1, 2) + pow(y2 - y1, 2);
+    vector<pair<Point2d, Point2d>> returnVec;
 
-    double x2 = c2.x;
-    double y2 = c2.y;
-    double r2 = c2.radius;
+    if (d_sq < (r1 - r2) * (r1 - r2))
+    {
+        // Circles are contained within each other and not tangent. No tangent lines exist.
+        cerr << "Circles are contained within each other and not tangent. No tangent lines exist" << endl;
+        return returnVec;
+    }
 
-    // magnitude of vector between circles centers : sqrt((x2-x1)^2 + (y2-y1)^2)
-    double dx = x2 - x1;
-    double dy = y2 - y1;
-    double d = std::hypot(dx, dy);
+    double d = sqrt(d_sq);
+    double vx = (x2 - x1) / d;
+    double vy = (y2 - y1) / d;
 
-    // Angle between the line joining the centers of the circles and the horizontal axis
-    double t = std::atan2(dy, dx);
-    // Angles at which the tangent lines are inclined to the line joining the centers of the circles
-    double alpha = std::asin(r1 / d);
-    double beta = std::asin(r2 / d);
+    // Calculate tangent points for each combination of sign1 and sign2
+    // sign1 = +1, sign2 = +1
+    for (int sign1 = +1; sign1 >= -1; sign1 -= 2)
+    {
+        double c = (r1 - sign1 * r2) / d;
+        if (c * c > 1.0)
+            continue; // want to be subtracting small from large, not adding
+        double h = sqrt(max(0.0, 1.0 - c * c));
 
-    vector<pair<Point2d, Point2d>> tangent_points;
-    // outer tangent points
-    Point2d pot1(x1 + r1 * std::cos(t + alpha), y1 + r1 * std::sin(t + alpha));
-    Point2d pot2(x2 + r2 * std::cos(t + alpha), y2 + r2 * std::sin(t + alpha));
+        for (int sign2 = +1; sign2 >= -1; sign2 -= 2)
+        {
+            double nx = vx * c - sign2 * h * vy;
+            double ny = vy * c + sign2 * h * vx;
+            returnVec.push_back(make_pair(make_pair(x1 + r1 * nx, y1 + r1 * ny),
+                                          make_pair(x2 + sign1 * r2 * nx, y2 + sign1 * r2 * ny)));
+        }
+    }
 
-    // inner tangent points
-    Point2d pit1(x1 + r1 * std::cos(t - alpha), y1 + r1 * std::sin(t - alpha));
-    Point2d pit2(x2 + r2 * std::cos(t - alpha), y2 + r2 * std::sin(t - alpha));
-
-    tangent_points.push_back(make_pair(pot1, pot2)); // RR outer tangent points
-    tangent_points.push_back(make_pair(pit1, pit2)); // LL inner tangent points
-    tangent_points.push_back(make_pair(pot1, pit2)); // RL outer and inner tangent points
-    tangent_points.push_back(make_pair(pit1, pot2)); // LR inner and outer tangent points
-
-    cout << "pot1: " << pot1.first << ", " << pot1.second << endl;
-    cout << "pot2: " << pot2.first << ", " << pot2.second << endl
-         << endl;
-    cout << "pit1: " << pit1.first << ", " << pit1.second << endl;
-    cout << "pit2: " << pit2.first << ", " << pit2.second << endl;
-    cout << endl;
-    cout << "pot1: " << pot1.first << ", " << pot1.second << endl;
-    cout << "pot2: " << pot2.first << ", " << pot2.second << endl;
-    cout << endl;
-    cout << "pit1: " << pit1.first << ", " << pit1.second << endl;
-    cout << "pit2: " << pit2.first << ", " << pit2.second << endl;
-    return tangent_points;
+    return returnVec;
 }
+
+#define PI 3.14159265
 
 void get_RSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
 {
-    // Calculate the circles about which we will turn
+    double start_x = 0;
+    double start_y = 0;
+    double start_theta = 0;
+
+    double goal_x = 3;
+    double goal_y = 3;
+    double goal_theta = 0;
+
+    if (tangent_points.size() == 0)
+    {
+        cout << "No tangent points found" << endl;
+        return;
+    }
+
+    Point2d vec1, vec2;
+
+    // right turn arc length = r1 * theta
+    Point2d t1 = tangent_points.at(0).first;
+    // V1 = start - center
+    vec1.first = start_x - c1.x;
+    vec1.second = start_y - c1.y;
+    // V2 = end - center
+    vec2.first = t1.first - c1.x;
+    vec2.second = t1.second - c1.y;
+    // Check direction v1 rotated to end up at v2
+    double theta = atan2(vec2.second, vec2.first) - atan2(vec1.second, vec1.first);
+    // right turn is a negative rotation
+    if (theta > 0)
+        theta -= 2.0 * PI;
+    double arclength = fabs(MINRADIUS * theta);
+    double timesteps = arclength / DELTA;
+
+    // ahead arc length
+    Point2d t2 = tangent_points.at(0).second;
+    double arclength_ahead = get_distance(t1.first, t1.second, t2.first, t2.second);
+    double timesteps_ahead = arclength_ahead / DELTA;
+
+    // right turn arc length = r1 * theta
+    // V1 = start - center
+    vec1.first = t2.first - c2.x;
+    vec1.second = t2.second - c2.y;
+    // V2 = end - center
+    vec2.first = goal_x - c2.x;
+    vec2.second = goal_y - c2.y;
+    // Check direction v1 rotated to end up at v2
+    double theta1 = atan2(vec2.second, vec2.first) - atan2(vec1.second, vec1.first);
+    // right turn is a negative rotation
+    if (theta1 > 0)
+        theta1 -= 2.0 * PI;
+    double arclength1 = fabs(MINRADIUS * theta1);
+    double timesteps1 = arclength1 / DELTA;
+
+    cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
+    cout << "arclength_ahead: " << arclength_ahead << ", timesteps_ahead: " << timesteps_ahead << endl;
+    cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
+    cout << arclength1 + arclength + arclength_ahead << endl;
 }
 
 RRTNode RRT::get_path(RRTNode *from_node, RRTNode to_node, int parent_index)
@@ -309,5 +360,6 @@ int main()
     // std::vector<Point2d> path = rrt.planning();
     Circle c1(1.97, -1.1, 1.1);
     Circle c2(3, 1.9, 1.1);
-    create_tangent(c1, c2);
+    vector<pair<Point2d, Point2d>> tangent_points = create_tangent(c1, c2);
+    get_RSRPath(tangent_points, c1, c2);
 }
