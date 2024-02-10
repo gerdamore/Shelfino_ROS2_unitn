@@ -391,7 +391,68 @@ void get_LSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circl
     // Check direction v1 rotated to end up at v2
     double theta1 = atan2(vec2.second, vec2.first) - atan2(vec1.second, vec1.first);
     // right turn is a negative rotation
+    if (theta1 < 0)
+        theta1 += 2.0 * PI;
+    double arclength1 = fabs(MINRADIUS * theta1);
+    double timesteps1 = arclength1 / DELTA;
 
+    cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
+    cout << "arclength_ahead: " << arclength_ahead << ", timesteps_ahead: " << timesteps_ahead << endl;
+    cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
+    cout << arclength1 + arclength + arclength_ahead << endl;
+}
+
+void get_LSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
+{
+    double start_x = 0;
+    double start_y = 0;
+    double start_theta = 0;
+
+    double goal_x = 3;
+    double goal_y = 3;
+    double goal_theta = 0;
+
+    if (tangent_points.size() == 0)
+    {
+        cout << "No tangent points found" << endl;
+        return;
+    }
+
+    Point2d vec1, vec2;
+
+    // right turn arc length = r1 * theta
+    Point2d t1 = tangent_points.at(3).first;
+    // V1 = start - center
+    vec1.first = start_x - c1.x;
+    vec1.second = start_y - c1.y;
+    // V2 = end - center
+    vec2.first = t1.first - c1.x;
+    vec2.second = t1.second - c1.y;
+    // Check direction v1 rotated to end up at v2
+    double theta = atan2(vec2.second, vec2.first) - atan2(vec1.second, vec1.first);
+    // right turn is a negative rotation
+    if (theta < 0)
+        theta += 2.0 * PI;
+    double arclength = fabs(MINRADIUS * theta);
+    double timesteps = arclength / DELTA;
+
+    // ahead arc length
+    Point2d t2 = tangent_points.at(3).second;
+    double arclength_ahead = get_distance(t1.first, t1.second, t2.first, t2.second);
+    double timesteps_ahead = arclength_ahead / DELTA;
+
+    // right turn arc length = r1 * theta
+    // V1 = start - center
+    vec1.first = t2.first - c2.x;
+    vec1.second = t2.second - c2.y;
+    // V2 = end - center
+    vec2.first = goal_x - c2.x;
+    vec2.second = goal_y - c2.y;
+    // Check direction v1 rotated to end up at v2
+    double theta1 = atan2(vec2.second, vec2.first) - atan2(vec1.second, vec1.first);
+    // right turn is a negative rotation
+    if (theta1 > 0)
+        theta1 -= 2.0 * PI;
     double arclength1 = fabs(MINRADIUS * theta1);
     double timesteps1 = arclength1 / DELTA;
 
@@ -480,5 +541,5 @@ int main()
     Circle c1(1.97, -1.1, 1.1);
     Circle c2(3, 1.9, 1.1);
     vector<pair<Point2d, Point2d>> tangent_points = create_tangent(c1, c2);
-    get_LSLPath(tangent_points, c1, c2);
+    get_LSRPath(tangent_points, c1, c2);
 }
