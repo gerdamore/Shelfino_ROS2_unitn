@@ -172,6 +172,11 @@ public:
     }
 };
 
+#define WHEELBASE 1
+#define MINRADIUS 1.1
+#define MAXSTEER asin(WHEELBASE / MINRADIUS)
+#define DELTA 0.1
+
 vector<pair<Point2d, Point2d>> create_tangent(Circle c1, Circle c2)
 {
     double x1 = c1.x;
@@ -224,7 +229,6 @@ vector<pair<Point2d, Point2d>> create_tangent(Circle c1, Circle c2)
 void get_RSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
 {
     // Calculate the circles about which we will turn
-    
 }
 
 RRTNode RRT::get_path(RRTNode *from_node, RRTNode to_node, int parent_index)
@@ -303,7 +307,7 @@ int main()
     std::vector<double> boundary = {-3.1, 3.1};
     RRT rrt(start, goal, boundary);
     // std::vector<Point2d> path = rrt.planning();
-    Circle c1(9, 14, 1.1);
-    Circle c2(10, 12, 1.1);
+    Circle c1(1.97, -1.1, 1.1);
+    Circle c2(3, 1.9, 1.1);
     create_tangent(c1, c2);
 }
