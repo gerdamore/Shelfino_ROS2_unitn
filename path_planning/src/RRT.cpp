@@ -2,6 +2,7 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <fstream>
 #include "RRT.h"
 #include "Utils.h"
 
@@ -217,4 +218,11 @@ int main(int argc, char *argv[])
     std::vector<double> boundary = {-3.1, 3.1};
     RRT rrt(start, goal, boundary);
     std::vector<Point2d> path = rrt.planning();
+    std::ofstream outfile("points.csv");
+    for (const auto &point : path)
+    {
+        outfile << point.x << "," << point.y << ", 0" << std::endl;
+    }
+    outfile.close();
+    system("python3 print.py");
 }

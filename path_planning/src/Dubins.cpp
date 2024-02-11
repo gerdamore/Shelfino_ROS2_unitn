@@ -498,7 +498,7 @@ DubinsPath Dubins::get_CCCPath(Circle start_left, Circle start_right, Circle end
     }
 }
 
-std::vector<PointDubins> get_robot_trajectory(DubinsPath path, Point2d start, double start_theta)
+std::vector<PointDubins> Dubins::get_robot_trajectory(DubinsPath path)
 {
     std::vector<PointDubins> points;
 
@@ -545,44 +545,44 @@ std::vector<PointDubins> get_robot_trajectory(DubinsPath path, Point2d start, do
     return points;
 }
 
-int main(int argc, char *argv[])
-{
-    Point2d start;
-    start.x = 0;
-    start.y = 0;
-    double goal_x_ = std::stod(argv[1]);
-    double goal_y_ = std::stod(argv[2]);
-    Point2d goal;
-    goal.x = goal_x_;
-    goal.y = goal_y_;
-    double start_theta = 0;
-    double goal_theta = atan2(goal_y_, goal_x_);
+// int main(int argc, char *argv[])
+// {
+//     Point2d start;
+//     start.x = 0;
+//     start.y = 0;
+//     double goal_x_ = std::stod(argv[1]);
+//     double goal_y_ = std::stod(argv[2]);
+//     Point2d goal;
+//     goal.x = goal_x_;
+//     goal.y = goal_y_;
+//     double start_theta = 0;
+//     double goal_theta = atan2(goal_y_, goal_x_);
 
-    Dubins dubins(start, goal, start_theta, goal_theta);
-    DubinsPath shortest_path = dubins.get_shortest_path();
-    cout << "------------------------" << endl;
-    std::cout << "Shortest path length: " << shortest_path.length << endl;
-    cout << "Shortest path type: " << shortest_path.type << endl;
-    cout << "Shortest path controls: " << endl;
-    for (int i = 0; i < 3; i++)
-    {
-        cout << "Control " << i << ": " << endl;
-        cout << "Timestamp: " << shortest_path.controls[i].timestamp << endl;
-        cout << "Steering angle: " << shortest_path.controls[i].steering_angle << endl;
-    }
+//     Dubins dubins(start, goal, start_theta, goal_theta);
+//     DubinsPath shortest_path = dubins.get_shortest_path();
+//     cout << "------------------------" << endl;
+//     std::cout << "Shortest path length: " << shortest_path.length << endl;
+//     cout << "Shortest path type: " << shortest_path.type << endl;
+//     cout << "Shortest path controls: " << endl;
+//     for (int i = 0; i < 3; i++)
+//     {
+//         cout << "Control " << i << ": " << endl;
+//         cout << "Timestamp: " << shortest_path.controls[i].timestamp << endl;
+//         cout << "Steering angle: " << shortest_path.controls[i].steering_angle << endl;
+//     }
 
-    if (shortest_path.length == INFINITY)
-    {
-        cout << "No path found" << endl;
-        return 0;
-    }
-    std::vector<PointDubins> points = get_robot_trajectory(shortest_path, start, start_theta);
-    std::ofstream outfile("points.csv");
-    for (const auto &point : points)
-    {
-        outfile << point.x << "," << point.y << "," << point.theta << std::endl;
-    }
-    outfile.close();
-    system("python3 print.py");
-    return 0;
-}
+//     if (shortest_path.length == INFINITY)
+//     {
+//         cout << "No path found" << endl;
+//         return 0;
+//     }
+//     std::vector<PointDubins> points = dubins.get_robot_trajectory(shortest_path);
+//     std::ofstream outfile("points.csv");
+//     for (const auto &point : points)
+//     {
+//         outfile << point.x << "," << point.y << "," << point.theta << std::endl;
+//     }
+//     outfile.close();
+//     system("python3 print.py");
+//     return 0;
+// }

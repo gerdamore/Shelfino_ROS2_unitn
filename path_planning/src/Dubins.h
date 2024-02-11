@@ -4,25 +4,13 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include "Utils.h"
 
 #define WHEELBASE 1
 #define MINRADIUS 1.1
 #define MAXSTEER asin(WHEELBASE / MINRADIUS)
 #define DELTA 0.05
 #define PI 3.14159265358979323846
-
-struct Point2d
-{
-    double x;
-    double y;
-};
-
-struct PointDubins
-{
-    double x;
-    double y;
-    double theta;
-};
 
 class Circle
 {
@@ -72,6 +60,7 @@ class Dubins
 public:
     Dubins(Point2d start, Point2d goal, double start_theta, double goal_theta);
     DubinsPath get_shortest_path();
+    std::vector<PointDubins> get_robot_trajectory(DubinsPath path);
 
 private:
     Point2d start;

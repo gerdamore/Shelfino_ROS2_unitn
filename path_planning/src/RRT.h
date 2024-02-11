@@ -5,9 +5,10 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include "Utils.h"
 
-#define MAX_ITER 1000
-#define GOAL_PROBABILITY 5
+#define MAX_ITER 200
+#define GOAL_PROBABILITY 10
 
 class RRTNode
 {
@@ -23,8 +24,6 @@ public:
     RRTNode();
     RRTNode(double x, double y, double yaw);
 };
-
-typedef std::pair<double, double> Point2d;
 
 class RRT
 {
