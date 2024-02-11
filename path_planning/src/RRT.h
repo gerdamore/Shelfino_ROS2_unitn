@@ -35,8 +35,6 @@ public:
 private:
     std::vector<Point2d> get_final_path(RRTNode node);
 
-    double calc_dist_to_goal(double x, double y, double end_x, double end_y);
-
     RRTNode get_shortest_path();
 
     RRTNode get_path(RRTNode *from_node, RRTNode to_node, int parent_index);
