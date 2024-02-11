@@ -6,6 +6,9 @@
 #include <cmath>
 #include <algorithm>
 
+#define MAX_ITER 1000
+#define GOAL_PROBABILITY 5
+
 class RRTNode
 {
 public:
