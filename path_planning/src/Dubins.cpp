@@ -64,8 +64,48 @@ vector<pair<Point2d, Point2d>> Dubins::create_tangent(const Circle &c1, const Ci
 
 DubinsPath Dubins::get_shortest_path()
 {
-    get_CCCPath();
-    get_CSCPath();
+    Circle start_left;
+    Circle start_right;
+    Circle end_left;
+    Circle end_right;
+
+    double theta = start_theta;
+    theta += PI / 2.0;
+    if (theta > PI)
+        theta -= 2.0 * PI;
+
+    start_left.x = start.x + MINRADIUS * cos(theta);
+    start_left.y = start.y + MINRADIUS * sin(theta);
+    start_left.radius = MINRADIUS;
+
+    theta = start_theta;
+    theta -= PI / 2.0;
+    if (theta < -PI)
+        theta += 2.0 * PI;
+
+    start_right.x = start.x + MINRADIUS * cos(theta);
+    start_right.y = start.y + MINRADIUS * sin(theta);
+    start_right.radius = MINRADIUS;
+
+    theta = goal_theta;
+    theta += PI / 2.0;
+    if (theta > PI)
+        theta -= 2.0 * PI;
+
+    end_left.x = goal.x + MINRADIUS * cos(theta);
+    end_left.y = goal.y + MINRADIUS * sin(theta);
+    end_left.radius = MINRADIUS;
+
+    theta = goal_theta;
+    theta -= PI / 2.0;
+    if (theta < -PI)
+        theta += 2.0 * PI;
+
+    end_right.x = goal.x + MINRADIUS * cos(theta);
+    end_right.y = goal.y + MINRADIUS * sin(theta);
+    end_right.radius = MINRADIUS;
+    get_CSCPath(start_left, start_right, end_left, end_right);
+    get_CCCPath(start_left, start_right, end_left, end_right);
 }
 
 double Dubins::get_arc_length(Point2d start, Point2d end, Circle center, bool is_right_turn)
@@ -123,7 +163,9 @@ DubinsPath Dubins::get_RSRPath(const vector<pair<Point2d, Point2d>> &tangent_poi
     if (tangent_points.size() == 0)
     {
         std::cout << "No tangent points found" << std::endl;
-        return DubinsPath();
+        DubinsPath path;
+        path.length = INFINITY;
+        return path;
     }
     DubinsPath path;
     path.type = RSR;
@@ -153,10 +195,12 @@ DubinsPath Dubins::get_RSRPath(const vector<pair<Point2d, Point2d>> &tangent_poi
 DubinsPath Dubins::get_RSLPath(const vector<pair<Point2d, Point2d>> &tangent_points, const Circle &c1, const Circle &c2)
 {
 
-    if (tangent_points.size() == 0)
+    if (tangent_points.size() < 3)
     {
         std::cout << "No tangent points found" << endl;
-        return DubinsPath();
+        DubinsPath path;
+        path.length = INFINITY;
+        return path;
     }
     DubinsPath path;
     path.type = RSL;
@@ -185,10 +229,12 @@ DubinsPath Dubins::get_RSLPath(const vector<pair<Point2d, Point2d>> &tangent_poi
 
 DubinsPath Dubins::get_LSLPath(const vector<pair<Point2d, Point2d>> &tangent_points, const Circle &c1, const Circle &c2)
 {
-    if (tangent_points.size() == 0)
+    if (tangent_points.size() < 2)
     {
         std::cout << "No tangent points found" << endl;
-        return DubinsPath();
+        DubinsPath path;
+        path.length = INFINITY;
+        return path;
     }
     DubinsPath path;
     path.type = LSL;
@@ -218,10 +264,12 @@ DubinsPath Dubins::get_LSLPath(const vector<pair<Point2d, Point2d>> &tangent_poi
 DubinsPath Dubins::get_LSRPath(const vector<pair<Point2d, Point2d>> &tangent_points, const Circle &c1, const Circle &c2)
 {
 
-    if (tangent_points.size() == 0)
+    if (tangent_points.size() < 4)
     {
         std::cout << "No tangent points found" << endl;
-        return DubinsPath();
+        DubinsPath path;
+        path.length = INFINITY;
+        return path;
     }
 
     DubinsPath path;
@@ -249,54 +297,14 @@ DubinsPath Dubins::get_LSRPath(const vector<pair<Point2d, Point2d>> &tangent_poi
     return path;
 }
 
-void Dubins::get_CSCPath()
+void Dubins::get_CSCPath(Circle start_left, Circle start_right, Circle end_left, Circle end_right)
 {
-    Circle start_left;
-    Circle start_right;
-    Circle end_left;
-    Circle end_right;
-
-    double theta = start_theta;
-    theta += PI / 2.0;
-    if (theta > PI)
-        theta -= 2.0 * PI;
-
-    start_left.x = start.x + MINRADIUS * cos(theta);
-    start_left.y = start.y + MINRADIUS * sin(theta);
-    start_left.radius = MINRADIUS;
-
-    theta = start_theta;
-    theta -= PI / 2.0;
-    if (theta < -PI)
-        theta += 2.0 * PI;
-
-    start_right.x = start.x + MINRADIUS * cos(theta);
-    start_right.y = start.y + MINRADIUS * sin(theta);
-    start_right.radius = MINRADIUS;
-
-    theta = goal_theta;
-    theta += PI / 2.0;
-    if (theta > PI)
-        theta -= 2.0 * PI;
-
-    end_left.x = goal.x + MINRADIUS * cos(theta);
-    end_left.y = goal.y + MINRADIUS * sin(theta);
-    end_left.radius = MINRADIUS;
-
-    theta = goal_theta;
-    theta -= PI / 2.0;
-    if (theta < -PI)
-        theta += 2.0 * PI;
-
-    end_right.x = goal.x + MINRADIUS * cos(theta);
-    end_right.y = goal.y + MINRADIUS * sin(theta);
-    end_right.radius = MINRADIUS;
 
     // print Circles
-    std::cout << "start_left: " << start_left.x << ", " << start_left.y << endl;
-    std::cout << "start_right: " << start_right.x << ", " << start_right.y << endl;
-    std::cout << "end_left: " << end_left.x << ", " << end_left.y << endl;
-    std::cout << "end_right: " << end_right.x << ", " << end_right.y << endl;
+    // std::cout << "start_left: " << start_left.x << ", " << start_left.y << endl;
+    // std::cout << "start_right: " << start_right.x << ", " << start_right.y << endl;
+    // std::cout << "end_left: " << end_left.x << ", " << end_left.y << endl;
+    // std::cout << "end_right: " << end_right.x << ", " << end_right.y << endl;
 
     // RSR
     vector<pair<Point2d, Point2d>> tangent_points = create_tangent(start_right, end_right);
@@ -314,9 +322,10 @@ void Dubins::get_CSCPath()
     // get the smallest length
     // print lenghts
     std::cout << "RSR_length: " << RSR_length.length << endl;
+    std::cout << "LSL_length: " << LSL_length.length << endl;
     std::cout << "RSL_length: " << RSL_length.length << endl;
     std::cout << "LSR_length: " << LSR_length.length << endl;
-    std::cout << "LSL_length: " << LSL_length.length << endl;
+
     // print shortest DUbinsPath WITH INFO
 }
 
@@ -327,10 +336,13 @@ DubinsPath Dubins::get_RLRPath(const Circle &c1, const Circle &c2)
     if (distance > 4 * MINRADIUS)
     {
         std::cout << "No tangent points found" << endl;
-        return DubinsPath();
+        DubinsPath path;
+        path.length = INFINITY;
+        return path;
     }
     DubinsPath path;
     path.type = RLR;
+
     Point2d vec1, vec2;
     vec1.x = c2.x - c1.x;
     vec1.y = c2.y - c1.y;
@@ -342,71 +354,37 @@ DubinsPath Dubins::get_RLRPath(const Circle &c1, const Circle &c2)
     c3.x = c1.x + 2 * MINRADIUS * cos(theta);
     c3.y = c1.y + 2 * MINRADIUS * sin(theta);
     c3.radius = MINRADIUS;
-    std::cout << "Circle 3: " << c3.x << ", " << c3.y << endl;
+
     Point2d tangent_point1;
     tangent_point1.x = (c1.x + c3.x) / 2;
     tangent_point1.y = (c1.y + c3.y) / 2;
-
-    vec1.x = start.x - c1.x;
-    vec1.y = start.y - c1.y;
-    // V2 = end - center
-    vec2.x = tangent_point1.x - c1.x;
-    vec2.y = tangent_point1.y - c1.y;
-    // Check direction v1 rotated to end up at v2
-    theta = atan2(vec2.y, vec2.x) - atan2(vec1.y, vec1.x);
-    // right turn is a negative rotation
-    if (theta > 0)
-        theta -= 2.0 * PI;
-    double arclength = fabs(MINRADIUS * theta);
-    double timesteps = arclength / DELTA;
-    DubinsControl control1;
-    control1.timestamp = timesteps;
-    control1.steering_angle = -1 * MAXSTEER;
-    path.controls[0] = control1;
 
     Point2d tangent_point2;
     tangent_point2.x = (c2.x + c3.x) / 2;
     tangent_point2.y = (c2.y + c3.y) / 2;
 
-    // V1 = start - center
-    vec1.x = tangent_point1.x - c3.x;
-    vec1.y = tangent_point1.y - c3.y;
-    // V2 = end - center
-    vec2.x = tangent_point2.x - c3.x;
-    vec2.y = tangent_point2.y - c3.y;
-    // Check direction v1 rotated to end up at v2
-    theta = atan2(vec2.y, vec2.x) - atan2(vec1.y, vec1.x);
-    // right turn is a negative rotation
-    if (theta < 0)
-        theta += 2.0 * PI;
-    double arclength1 = fabs(MINRADIUS * theta);
-    double timesteps1 = arclength1 / DELTA;
-    DubinsControl control2;
-    control2.timestamp = timesteps1;
-    control2.steering_angle = MAXSTEER;
-    path.controls[1] = control2;
+    double arclength;
 
-    vec1.x = tangent_point2.x - c2.x;
-    vec1.y = tangent_point2.y - c2.y;
-    // V2 = end - center
-    vec2.x = goal.x - c2.x;
-    vec2.y = goal.y - c2.y;
-    // Check direction v1 rotated to end up at v2
-    theta = atan2(vec2.y, vec2.x) - atan2(vec1.y, vec1.x);
-    // right turn is a negative rotation
-    if (theta > 0)
-        theta -= 2.0 * PI;
-    double arclength3 = fabs(MINRADIUS * theta);
-    double timesteps3 = arclength3 / DELTA;
-    DubinsControl control3;
-    control3.timestamp = timesteps3;
-    control3.steering_angle = -1 * MAXSTEER;
-    path.controls[2] = control3;
+    // right turn
+    arclength = get_arc_length(start, tangent_point1, c1, true);
+    path.controls[0] = get_right_turn_control(arclength);
+    path.length = arclength;
+
+    // left turn
+    arclength = get_arc_length(tangent_point1, tangent_point2, c3, false);
+    path.controls[1] = get_left_turn_control(arclength);
+    path.length += arclength;
+
+    // right turn
+    arclength = get_arc_length(tangent_point2, goal, c2, true);
+    path.controls[2] = get_right_turn_control(arclength);
+    path.length += arclength;
 
     // PRINT RESULTS
-    std::cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
-    std::cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
-    std::cout << "arclength3: " << arclength3 << ", timesteps3: " << timesteps3 << endl;
+    // std::cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
+    // std::cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
+    // std::cout << "arclength3: " << arclength3 << ", timesteps3: " << timesteps3 << endl;
+    return path;
 }
 
 DubinsPath Dubins::get_LRLPath(const Circle &c1, const Circle &c2)
@@ -416,7 +394,9 @@ DubinsPath Dubins::get_LRLPath(const Circle &c1, const Circle &c2)
     if (distance > 4 * MINRADIUS)
     {
         std::cout << "No tangent points found" << endl;
-        return DubinsPath();
+        DubinsPath path;
+        path.length = INFINITY;
+        return path;
     }
     DubinsPath path;
     path.type = LRL;
@@ -431,123 +411,48 @@ DubinsPath Dubins::get_LRLPath(const Circle &c1, const Circle &c2)
     c3.x = c1.x + 2 * MINRADIUS * cos(theta);
     c3.y = c1.y + 2 * MINRADIUS * sin(theta);
     c3.radius = MINRADIUS;
-    std::cout << "Circle 3: " << c3.x << ", " << c3.y << endl;
+
     Point2d tangent_point1;
     tangent_point1.x = (c1.x + c3.x) / 2;
     tangent_point1.y = (c1.y + c3.y) / 2;
-
-    vec1.x = start.x - c1.x;
-    vec1.y = start.y - c1.y;
-    // V2 = end - center
-    vec2.x = tangent_point1.x - c1.x;
-    vec2.y = tangent_point1.y - c1.y;
-    // Check direction v1 rotated to end up at v2
-    theta = atan2(vec2.y, vec2.x) - atan2(vec1.y, vec1.x);
-    // right turn is a negative rotation
-    if (theta < 0)
-        theta += 2.0 * PI;
-    double arclength = fabs(MINRADIUS * theta);
-    double timesteps = arclength / DELTA;
-    DubinsControl control1;
-    control1.timestamp = timesteps;
-    control1.steering_angle = 1 * MAXSTEER;
-    path.controls[0] = control1;
 
     Point2d tangent_point2;
     tangent_point2.x = (c2.x + c3.x) / 2;
     tangent_point2.y = (c2.y + c3.y) / 2;
 
-    // V1 = start - center
-    vec1.x = tangent_point1.x - c3.x;
-    vec1.y = tangent_point1.y - c3.y;
-    // V2 = end - center
-    vec2.x = tangent_point2.x - c3.x;
-    vec2.y = tangent_point2.y - c3.y;
-    // Check direction v1 rotated to end up at v2
-    theta = atan2(vec2.y, vec2.x) - atan2(vec1.y, vec1.x);
-    // right turn is a negative rotation
-    if (theta > 0)
-        theta -= 2.0 * PI;
-    double arclength1 = fabs(MINRADIUS * theta);
-    double timesteps1 = arclength1 / DELTA;
-    DubinsControl control2;
-    control2.timestamp = timesteps1;
-    control2.steering_angle = -1 * MAXSTEER;
-    path.controls[1] = control2;
+    double arclength;
 
-    vec1.x = tangent_point2.x - c2.x;
-    vec1.y = tangent_point2.y - c2.y;
-    // V2 = end - center
-    vec2.x = goal.x - c2.x;
-    vec2.y = goal.y - c2.y;
-    // Check direction v1 rotated to end up at v2
-    theta = atan2(vec2.y, vec2.x) - atan2(vec1.y, vec1.x);
-    // right turn is a negative rotation
-    if (theta < 0)
-        theta += 2.0 * PI;
-    double arclength3 = fabs(MINRADIUS * theta);
-    double timesteps3 = arclength3 / DELTA;
-    DubinsControl control3;
-    control3.timestamp = timesteps3;
-    control3.steering_angle = 1 * MAXSTEER;
-    path.controls[2] = control3;
+    // left turn
+    arclength = get_arc_length(start, tangent_point1, c1, false);
+    path.controls[0] = get_left_turn_control(arclength);
+    path.length = arclength;
+
+    // right turn
+    arclength = get_arc_length(tangent_point1, tangent_point2, c3, true);
+    path.controls[1] = get_right_turn_control(arclength);
+    path.length += arclength;
+
+    // left turn
+    arclength = get_arc_length(tangent_point2, goal, c2, false);
+    path.controls[2] = get_left_turn_control(arclength);
+    path.length += arclength;
 
     // PRINT RESULTS
-    std::cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
-    std::cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
-    std::cout << "arclength3: " << arclength3 << ", timesteps3: " << timesteps3 << endl;
-    path.length = (arclength + arclength1 + arclength3);
+    // std::cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
+    // std::cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
+    // std::cout << "arclength3: " << arclength3 << ", timesteps3: " << timesteps3 << endl;
+
     return path;
 }
 
-void Dubins::get_CCCPath()
+void Dubins::get_CCCPath(Circle start_left, Circle start_right, Circle end_left, Circle end_right)
 {
-    Circle start_left;
-    Circle start_right;
-    Circle end_left;
-    Circle end_right;
-
-    double theta = start_theta;
-    theta += PI / 2.0;
-    if (theta > PI)
-        theta -= 2.0 * PI;
-
-    start_left.x = start.x + MINRADIUS * cos(theta);
-    start_left.y = start.y + MINRADIUS * sin(theta);
-    start_left.radius = MINRADIUS;
-
-    theta = start_theta;
-    theta -= PI / 2.0;
-    if (theta < -PI)
-        theta += 2.0 * PI;
-
-    start_right.x = start.x + MINRADIUS * cos(theta);
-    start_right.y = start.y + MINRADIUS * sin(theta);
-    start_right.radius = MINRADIUS;
-
-    theta = goal_theta;
-    theta += PI / 2.0;
-    if (theta > PI)
-        theta -= 2.0 * PI;
-
-    end_left.x = goal.x + MINRADIUS * cos(theta);
-    end_left.y = goal.y + MINRADIUS * sin(theta);
-    end_left.radius = MINRADIUS;
-
-    theta = goal_theta;
-    theta -= PI / 2.0;
-    if (theta < -PI)
-        theta += 2.0 * PI;
-
-    end_right.x = goal.x + MINRADIUS * cos(theta);
-    end_right.y = goal.y + MINRADIUS * sin(theta);
-    end_right.radius = MINRADIUS;
 
     // print Circles
-    std::cout << "start_left: " << start_left.x << ", " << start_left.y << endl;
-    std::cout << "start_right: " << start_right.x << ", " << start_right.y << endl;
-    std::cout << "end_left: " << end_left.x << ", " << end_left.y << endl;
-    std::cout << "end_right: " << end_right.x << ", " << end_right.y << endl;
+    // std::cout << "start_left: " << start_left.x << ", " << start_left.y << endl;
+    // std::cout << "start_right: " << start_right.x << ", " << start_right.y << endl;
+    // std::cout << "end_left: " << end_left.x << ", " << end_left.y << endl;
+    // std::cout << "end_right: " << end_right.x << ", " << end_right.y << endl;
 
     // RLR
     DubinsPath RLR_length = get_RLRPath(start_right, end_right);

@@ -82,7 +82,7 @@ private:
     DubinsControl get_left_turn_control(double arc_length);
     DubinsControl get_no_turn_control(double arc_length);
     double get_arc_length(Point2d start, Point2d end, Circle c, bool is_right_turn);
-    void get_CCCPath();
-    void get_CSCPath();
+    void get_CCCPath(Circle start_left, Circle start_right, Circle end_left, Circle end_right);
+    void get_CSCPath(Circle start_left, Circle start_right, Circle end_left, Circle end_right);
 };
 #endif // DUBINS_H
