@@ -3,6 +3,8 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include <fstream>
+#include <cstdlib>
 
 using namespace std;
 
@@ -104,8 +106,16 @@ DubinsPath Dubins::get_shortest_path()
     end_right.x = goal.x + MINRADIUS * cos(theta);
     end_right.y = goal.y + MINRADIUS * sin(theta);
     end_right.radius = MINRADIUS;
-    get_CSCPath(start_left, start_right, end_left, end_right);
-    get_CCCPath(start_left, start_right, end_left, end_right);
+    DubinsPath CSC_path = get_CSCPath(start_left, start_right, end_left, end_right);
+    DubinsPath CCC_path = get_CCCPath(start_left, start_right, end_left, end_right);
+    if (CSC_path.length < CCC_path.length)
+    {
+        return CSC_path;
+    }
+    else
+    {
+        return CCC_path;
+    }
 }
 
 double Dubins::get_arc_length(Point2d start, Point2d end, Circle center, bool is_right_turn)
@@ -297,7 +307,7 @@ DubinsPath Dubins::get_LSRPath(const vector<pair<Point2d, Point2d>> &tangent_poi
     return path;
 }
 
-void Dubins::get_CSCPath(Circle start_left, Circle start_right, Circle end_left, Circle end_right)
+DubinsPath Dubins::get_CSCPath(Circle start_left, Circle start_right, Circle end_left, Circle end_right)
 {
 
     // print Circles
@@ -326,7 +336,23 @@ void Dubins::get_CSCPath(Circle start_left, Circle start_right, Circle end_left,
     std::cout << "RSL_length: " << RSL_length.length << endl;
     std::cout << "LSR_length: " << LSR_length.length << endl;
 
-    // print shortest DUbinsPath WITH INFO
+    // get shortest path
+    if (RSR_length.length < LSL_length.length && RSR_length.length < RSL_length.length && RSR_length.length < LSR_length.length)
+    {
+        return RSR_length;
+    }
+    else if (LSL_length.length < RSL_length.length && LSL_length.length < LSR_length.length)
+    {
+        return LSL_length;
+    }
+    else if (RSL_length.length < LSR_length.length)
+    {
+        return RSL_length;
+    }
+    else
+    {
+        return LSR_length;
+    }
 }
 
 DubinsPath Dubins::get_RLRPath(const Circle &c1, const Circle &c2)
@@ -347,7 +373,7 @@ DubinsPath Dubins::get_RLRPath(const Circle &c1, const Circle &c2)
     vec1.x = c2.x - c1.x;
     vec1.y = c2.y - c1.y;
     double theta1 = atan2(vec1.y, vec1.x);
-    // for an RLR trajectory we want to subtract \theta from it to obtain a circle “to the right"
+    // for an RLR path we want to subtract \theta from it to obtain a circle “to the right"
     theta = theta1 - theta;
 
     Circle c3;
@@ -381,9 +407,9 @@ DubinsPath Dubins::get_RLRPath(const Circle &c1, const Circle &c2)
     path.length += arclength;
 
     // PRINT RESULTS
-    // std::cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
-    // std::cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
-    // std::cout << "arclength3: " << arclength3 << ", timesteps3: " << timesteps3 << endl;
+    // std::cout << "arclength: " << arclength << ", timestamp: " << timestamp << endl;
+    // std::cout << "arclength1: " << arclength1 << ", timestamp1: " << timestamp1 << endl;
+    // std::cout << "arclength3: " << arclength3 << ", timestamp3: " << timestamp3 << endl;
     return path;
 }
 
@@ -404,7 +430,7 @@ DubinsPath Dubins::get_LRLPath(const Circle &c1, const Circle &c2)
     vec1.x = c2.x - c1.x;
     vec1.y = c2.y - c1.y;
     double theta1 = atan2(vec1.y, vec1.x);
-    // for an LRL trajectory we want to add \theta from it to obtain a circle “to the right"
+    // for an LRL path we want to add \theta from it to obtain a circle “to the right"
     theta = theta1 + theta;
 
     Circle c3;
@@ -438,14 +464,14 @@ DubinsPath Dubins::get_LRLPath(const Circle &c1, const Circle &c2)
     path.length += arclength;
 
     // PRINT RESULTS
-    // std::cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
-    // std::cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
-    // std::cout << "arclength3: " << arclength3 << ", timesteps3: " << timesteps3 << endl;
+    // std::cout << "arclength: " << arclength << ", timestamp: " << timestamp << endl;
+    // std::cout << "arclength1: " << arclength1 << ", timestamp1: " << timestamp1 << endl;
+    // std::cout << "arclength3: " << arclength3 << ", timestamp3: " << timestamp3 << endl;
 
     return path;
 }
 
-void Dubins::get_CCCPath(Circle start_left, Circle start_right, Circle end_left, Circle end_right)
+DubinsPath Dubins::get_CCCPath(Circle start_left, Circle start_right, Circle end_left, Circle end_right)
 {
 
     // print Circles
@@ -460,6 +486,63 @@ void Dubins::get_CCCPath(Circle start_left, Circle start_right, Circle end_left,
     // LRL
     DubinsPath LRL_length = get_LRLPath(start_left, end_left);
     std::cout << "LRL_length: " << LRL_length.length << endl;
+
+    // return the shortest path
+    if (RLR_length.length < LRL_length.length)
+    {
+        return RLR_length;
+    }
+    else
+    {
+        return LRL_length;
+    }
+}
+
+std::vector<PointDubins> get_robot_trajectory(DubinsPath path, Point2d start, double start_theta)
+{
+    std::vector<PointDubins> points;
+
+    if (path.length == INFINITY)
+    {
+        return points;
+    }
+
+    double x = start.x;
+    double y = start.y;
+    double theta = start_theta;
+
+    for (DubinsControl control : path.controls)
+    {
+        if (control.timestamp == 0)
+        {
+            continue;
+        }
+
+        do
+        {
+            x += DELTA * cos(theta);
+            y += DELTA * sin(theta);
+
+            if (control.steering_angle != 0)
+            {
+                theta += DELTA / (WHEELBASE / sin(control.steering_angle));
+                if (theta > PI)
+                    theta -= 2.0 * PI;
+                else if (theta < -PI)
+                    theta += 2.0 * PI;
+            }
+
+            PointDubins p_tmp;
+            p_tmp.x = x;
+            p_tmp.y = y;
+            p_tmp.theta = theta;
+            points.push_back(p_tmp);
+
+            control.timestamp--;
+        } while (control.timestamp >= 0);
+    }
+
+    return points;
 }
 
 int main(int argc, char *argv[])
@@ -473,7 +556,33 @@ int main(int argc, char *argv[])
     goal.x = goal_x_;
     goal.y = goal_y_;
     double start_theta = 0;
-    double goal_theta = 0;
+    double goal_theta = atan2(goal_y_, goal_x_);
+
     Dubins dubins(start, goal, start_theta, goal_theta);
-    dubins.get_shortest_path();
+    DubinsPath shortest_path = dubins.get_shortest_path();
+    cout << "------------------------" << endl;
+    std::cout << "Shortest path length: " << shortest_path.length << endl;
+    cout << "Shortest path type: " << shortest_path.type << endl;
+    cout << "Shortest path controls: " << endl;
+    for (int i = 0; i < 3; i++)
+    {
+        cout << "Control " << i << ": " << endl;
+        cout << "Timestamp: " << shortest_path.controls[i].timestamp << endl;
+        cout << "Steering angle: " << shortest_path.controls[i].steering_angle << endl;
+    }
+
+    if (shortest_path.length == INFINITY)
+    {
+        cout << "No path found" << endl;
+        return 0;
+    }
+    std::vector<PointDubins> points = get_robot_trajectory(shortest_path, start, start_theta);
+    std::ofstream outfile("points.csv");
+    for (const auto &point : points)
+    {
+        outfile << point.x << "," << point.y << "," << point.theta << std::endl;
+    }
+    outfile.close();
+    system("python3 print.py");
+    return 0;
 }
