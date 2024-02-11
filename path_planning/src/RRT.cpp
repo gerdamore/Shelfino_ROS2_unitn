@@ -235,14 +235,39 @@ double goal_x = 0;
 double goal_y = 0;
 double goal_theta = 0;
 
-double get_RSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
+typedef enum DubinsPathType
+{
+    LSL = 0,
+    LSR = 1,
+    RSL = 2,
+    RSR = 3,
+    RLR = 4,
+    LRL = 5
+} DubinsPathType;
+
+typedef struct
+{
+    double timestamp;
+    double steering_angle;
+} DubinsControl;
+
+typedef struct
+{
+    double length;
+    enum DubinsPathType type;
+    DubinsControl controls[3];
+} DubinsPath;
+
+DubinsPath get_RSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
 {
 
     if (tangent_points.size() == 0)
     {
         cout << "No tangent points found" << endl;
-        return INFINITY;
+        return DubinsPath();
     }
+    DubinsPath path;
+    path.type = RSR;
 
     Point2d vec1, vec2;
 
@@ -261,11 +286,19 @@ double get_RSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Cir
         theta -= 2.0 * PI;
     double arclength = fabs(MINRADIUS * theta);
     double timesteps = arclength / DELTA;
+    DubinsControl control1;
+    control1.timestamp = timesteps;
+    control1.steering_angle = -1 * MAXSTEER;
+    path.controls[0] = control1;
 
     // ahead arc length
     Point2d t2 = tangent_points.at(0).second;
     double arclength_ahead = get_distance(t1.first, t1.second, t2.first, t2.second);
     double timesteps_ahead = arclength_ahead / DELTA;
+    DubinsControl control2;
+    control2.timestamp = timesteps_ahead;
+    control2.steering_angle = 0;
+    path.controls[1] = control2;
 
     // right turn arc length = r1 * theta
     // V1 = start - center
@@ -281,22 +314,28 @@ double get_RSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Cir
         theta1 -= 2.0 * PI;
     double arclength1 = fabs(MINRADIUS * theta1);
     double timesteps1 = arclength1 / DELTA;
+    DubinsControl control3;
+    control3.timestamp = timesteps1;
+    control3.steering_angle = -1 * MAXSTEER;
+    path.controls[2] = control3;
 
     cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
     cout << "arclength_ahead: " << arclength_ahead << ", timesteps_ahead: " << timesteps_ahead << endl;
     cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
-    return (arclength1 + arclength + arclength_ahead);
+    path.length = (arclength1 + arclength + arclength_ahead);
+    return path;
 }
 
-double get_RSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
+DubinsPath get_RSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
 {
 
     if (tangent_points.size() == 0)
     {
         cout << "No tangent points found" << endl;
-        return INFINITY;
+        return DubinsPath();
     }
-
+    DubinsPath path;
+    path.type = RSL;
     Point2d vec1, vec2;
 
     // right turn arc length = r1 * theta
@@ -314,11 +353,19 @@ double get_RSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Cir
         theta -= 2.0 * PI;
     double arclength = fabs(MINRADIUS * theta);
     double timesteps = arclength / DELTA;
+    DubinsControl control1;
+    control1.timestamp = timesteps;
+    control1.steering_angle = -1 * MAXSTEER;
+    path.controls[0] = control1;
 
     // ahead arc length
     Point2d t2 = tangent_points.at(2).second;
     double arclength_ahead = get_distance(t1.first, t1.second, t2.first, t2.second);
     double timesteps_ahead = arclength_ahead / DELTA;
+    DubinsControl control2;
+    control2.timestamp = timesteps_ahead;
+    control2.steering_angle = 0;
+    path.controls[1] = control2;
 
     // right turn arc length = r1 * theta
     // V1 = start - center
@@ -334,21 +381,27 @@ double get_RSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Cir
         theta1 += 2.0 * PI;
     double arclength1 = fabs(MINRADIUS * theta1);
     double timesteps1 = arclength1 / DELTA;
+    DubinsControl control3;
+    control3.timestamp = timesteps1;
+    control3.steering_angle = 1 * MAXSTEER;
+    path.controls[2] = control3;
 
     cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
     cout << "arclength_ahead: " << arclength_ahead << ", timesteps_ahead: " << timesteps_ahead << endl;
     cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
-    return (arclength1 + arclength + arclength_ahead);
+    path.length = (arclength1 + arclength + arclength_ahead);
+    return path;
 }
 
-double get_LSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
+DubinsPath get_LSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
 {
     if (tangent_points.size() == 0)
     {
         cout << "No tangent points found" << endl;
-        return INFINITY;
+        return DubinsPath();
     }
-
+    DubinsPath path;
+    path.type = LSL;
     Point2d vec1, vec2;
 
     // right turn arc length = r1 * theta
@@ -366,11 +419,19 @@ double get_LSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Cir
         theta += 2.0 * PI;
     double arclength = fabs(MINRADIUS * theta);
     double timesteps = arclength / DELTA;
+    DubinsControl control1;
+    control1.timestamp = timesteps;
+    control1.steering_angle = 1 * MAXSTEER;
+    path.controls[0] = control1;
 
     // ahead arc length
     Point2d t2 = tangent_points.at(1).second;
     double arclength_ahead = get_distance(t1.first, t1.second, t2.first, t2.second);
     double timesteps_ahead = arclength_ahead / DELTA;
+    DubinsControl control2;
+    control2.timestamp = timesteps_ahead;
+    control2.steering_angle = 0;
+    path.controls[1] = control2;
 
     // right turn arc length = r1 * theta
     // V1 = start - center
@@ -386,22 +447,29 @@ double get_LSLPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Cir
         theta1 += 2.0 * PI;
     double arclength1 = fabs(MINRADIUS * theta1);
     double timesteps1 = arclength1 / DELTA;
+    DubinsControl control3;
+    control3.timestamp = timesteps1;
+    control3.steering_angle = 1 * MAXSTEER;
+    path.controls[2] = control3;
 
     cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
     cout << "arclength_ahead: " << arclength_ahead << ", timesteps_ahead: " << timesteps_ahead << endl;
     cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
-    return (arclength1 + arclength + arclength_ahead);
+    path.length = (arclength1 + arclength + arclength_ahead);
+    return path;
 }
 
-double get_LSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
+DubinsPath get_LSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Circle c2)
 {
 
     if (tangent_points.size() == 0)
     {
         cout << "No tangent points found" << endl;
-        return INFINITY;
+        return DubinsPath();
     }
 
+    DubinsPath path;
+    path.type = LSR;
     Point2d vec1, vec2;
 
     // right turn arc length = r1 * theta
@@ -419,11 +487,19 @@ double get_LSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Cir
         theta += 2.0 * PI;
     double arclength = fabs(MINRADIUS * theta);
     double timesteps = arclength / DELTA;
+    DubinsControl control1;
+    control1.timestamp = timesteps;
+    control1.steering_angle = 1 * MAXSTEER;
+    path.controls[0] = control1;
 
     // ahead arc length
     Point2d t2 = tangent_points.at(3).second;
     double arclength_ahead = get_distance(t1.first, t1.second, t2.first, t2.second);
     double timesteps_ahead = arclength_ahead / DELTA;
+    DubinsControl control2;
+    control2.timestamp = timesteps_ahead;
+    control2.steering_angle = 0;
+    path.controls[1] = control2;
 
     // right turn arc length = r1 * theta
     // V1 = start - center
@@ -439,11 +515,16 @@ double get_LSRPath(vector<pair<Point2d, Point2d>> tangent_points, Circle c1, Cir
         theta1 -= 2.0 * PI;
     double arclength1 = fabs(MINRADIUS * theta1);
     double timesteps1 = arclength1 / DELTA;
+    DubinsControl control3;
+    control3.timestamp = timesteps1;
+    control3.steering_angle = -1 * MAXSTEER;
+    path.controls[2] = control3;
 
     // cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
     // cout << "arclength_ahead: " << arclength_ahead << ", timesteps_ahead: " << timesteps_ahead << endl;
     // cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
-    return (arclength1 + arclength + arclength_ahead);
+    path.length = (arclength1 + arclength + arclength_ahead);
+    return path;
 }
 
 void get_CSCPath()
@@ -497,44 +578,43 @@ void get_CSCPath()
 
     // RSR
     vector<pair<Point2d, Point2d>> tangent_points = create_tangent(start_right, end_right);
-    double RSR_length = get_RSRPath(tangent_points, start_right, end_right);
+    DubinsPath RSR_length = get_RSRPath(tangent_points, start_right, end_right);
     // RSL
     tangent_points = create_tangent(start_right, end_left);
-    double RSL_length = get_RSLPath(tangent_points, start_right, end_left);
+    DubinsPath RSL_length = get_RSLPath(tangent_points, start_right, end_left);
     // LSR
     tangent_points = create_tangent(start_left, end_right);
-    double LSR_length = get_LSRPath(tangent_points, start_left, end_right);
+    DubinsPath LSR_length = get_LSRPath(tangent_points, start_left, end_right);
     // LSL
     tangent_points = create_tangent(start_left, end_left);
-    double LSL_length = get_LSLPath(tangent_points, start_left, end_left);
+    DubinsPath LSL_length = get_LSLPath(tangent_points, start_left, end_left);
 
     // get the smallest length
     // print lenghts
-    cout << "RSR_length: " << RSR_length << endl;
-    cout << "RSl_length: " << RSL_length << endl;
-    cout << "LSR_length: " << LSR_length << endl;
-    cout << "LSL_length: " << LSL_length << endl;
-
-    double min_length = min(RSR_length, min(RSL_length, min(LSR_length, LSL_length)));
-    cout << "min_length: " << min_length << endl;
+    cout << "RSR_length: " << RSR_length.length << endl;
+    cout << "RSl_length: " << RSL_length.length << endl;
+    cout << "LSR_length: " << LSR_length.length << endl;
+    cout << "LSL_length: " << LSL_length.length << endl;
+    // print shortest DUbinsPath WITH INFO
 }
 
-double get_RLRPath(Circle c1, Circle c2)
+DubinsPath get_RLRPath(Circle c1, Circle c2)
 {
     double distance = get_distance(c1.x, c1.y, c2.x, c2.y);
     double theta = acos(distance / (4 * MINRADIUS));
     if (distance > 4 * MINRADIUS)
     {
         cout << "No tangent points found" << endl;
-        return INFINITY;
+        return DubinsPath();
     }
+    DubinsPath path;
+    path.type = RLR;
     Point2d vec1, vec2;
     vec1.first = c2.x - c1.x;
     vec1.second = c2.y - c1.y;
     double theta1 = atan2(vec1.second, vec1.first);
     // for an RLR trajectory we want to subtract \theta from it to obtain a circle “to the right"
     theta = theta1 - theta;
-    cout << theta << endl;
 
     Circle c3;
     c3.x = c1.x + 2 * MINRADIUS * cos(theta);
@@ -557,6 +637,10 @@ double get_RLRPath(Circle c1, Circle c2)
         theta -= 2.0 * PI;
     double arclength = fabs(MINRADIUS * theta);
     double timesteps = arclength / DELTA;
+    DubinsControl control1;
+    control1.timestamp = timesteps;
+    control1.steering_angle = -1 * MAXSTEER;
+    path.controls[0] = control1;
 
     Point2d tangent_point2;
     tangent_point2.first = (c2.x + c3.x) / 2;
@@ -575,6 +659,10 @@ double get_RLRPath(Circle c1, Circle c2)
         theta += 2.0 * PI;
     double arclength1 = fabs(MINRADIUS * theta);
     double timesteps1 = arclength1 / DELTA;
+    DubinsControl control2;
+    control2.timestamp = timesteps1;
+    control2.steering_angle = MAXSTEER;
+    path.controls[1] = control2;
 
     vec1.first = tangent_point2.first - c2.x;
     vec1.second = tangent_point2.second - c2.y;
@@ -588,30 +676,34 @@ double get_RLRPath(Circle c1, Circle c2)
         theta -= 2.0 * PI;
     double arclength3 = fabs(MINRADIUS * theta);
     double timesteps3 = arclength3 / DELTA;
+    DubinsControl control3;
+    control3.timestamp = timesteps3;
+    control3.steering_angle = -1 * MAXSTEER;
+    path.controls[2] = control3;
 
     // PRINT RESULTS
     cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
     cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
     cout << "arclength3: " << arclength3 << ", timesteps3: " << timesteps3 << endl;
-    return (arclength + arclength1 + arclength3);
 }
 
-double get_LRLPath(Circle c1, Circle c2)
+DubinsPath get_LRLPath(Circle c1, Circle c2)
 {
     double distance = get_distance(c1.x, c1.y, c2.x, c2.y);
     double theta = acos(distance / (4 * MINRADIUS));
     if (distance > 4 * MINRADIUS)
     {
         cout << "No tangent points found" << endl;
-        return INFINITY;
+        return DubinsPath();
     }
+    DubinsPath path;
+    path.type = LRL;
     Point2d vec1, vec2;
     vec1.first = c2.x - c1.x;
     vec1.second = c2.y - c1.y;
     double theta1 = atan2(vec1.second, vec1.first);
     // for an LRL trajectory we want to add \theta from it to obtain a circle “to the right"
     theta = theta1 + theta;
-    cout << theta << endl;
 
     Circle c3;
     c3.x = c1.x + 2 * MINRADIUS * cos(theta);
@@ -634,6 +726,10 @@ double get_LRLPath(Circle c1, Circle c2)
         theta += 2.0 * PI;
     double arclength = fabs(MINRADIUS * theta);
     double timesteps = arclength / DELTA;
+    DubinsControl control1;
+    control1.timestamp = timesteps;
+    control1.steering_angle = 1 * MAXSTEER;
+    path.controls[0] = control1;
 
     Point2d tangent_point2;
     tangent_point2.first = (c2.x + c3.x) / 2;
@@ -652,6 +748,10 @@ double get_LRLPath(Circle c1, Circle c2)
         theta -= 2.0 * PI;
     double arclength1 = fabs(MINRADIUS * theta);
     double timesteps1 = arclength1 / DELTA;
+    DubinsControl control2;
+    control2.timestamp = timesteps1;
+    control2.steering_angle = -1 * MAXSTEER;
+    path.controls[1] = control2;
 
     vec1.first = tangent_point2.first - c2.x;
     vec1.second = tangent_point2.second - c2.y;
@@ -665,12 +765,17 @@ double get_LRLPath(Circle c1, Circle c2)
         theta += 2.0 * PI;
     double arclength3 = fabs(MINRADIUS * theta);
     double timesteps3 = arclength3 / DELTA;
+    DubinsControl control3;
+    control3.timestamp = timesteps3;
+    control3.steering_angle = 1 * MAXSTEER;
+    path.controls[2] = control3;
 
     // PRINT RESULTS
     cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
     cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
     cout << "arclength3: " << arclength3 << ", timesteps3: " << timesteps3 << endl;
-    return (arclength + arclength1 + arclength3);
+    path.length = (arclength + arclength1 + arclength3);
+    return path;
 }
 
 void get_CCCPath()
@@ -723,11 +828,11 @@ void get_CCCPath()
     cout << "end_right: " << end_right.x << ", " << end_right.y << endl;
 
     // RLR
-    double RLR_length = get_RLRPath(start_right, end_right);
-    cout << "RLR_length: " << RLR_length << endl;
+    DubinsPath RLR_length = get_RLRPath(start_right, end_right);
+    cout << "RLR_length: " << RLR_length.length << endl;
     // LRL
-    double LRL_length = get_LRLPath(start_left, end_left);
-    cout << "LRL_length: " << LRL_length << endl;
+    DubinsPath LRL_length = get_LRLPath(start_left, end_left);
+    cout << "LRL_length: " << LRL_length.length << endl;
 }
 
 RRTNode RRT::get_path(RRTNode *from_node, RRTNode to_node, int parent_index)
@@ -808,5 +913,6 @@ int main(int argc, char *argv[])
     goal_x = std::stod(argv[1]);
     goal_y = std::stod(argv[2]);
 
+    get_CSCPath();
     get_CCCPath();
 }
