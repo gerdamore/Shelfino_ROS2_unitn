@@ -1,5 +1,5 @@
-#ifndef GYAK_H
-#define GYAK_H
+#ifndef RRT_H
+#define RRT_H
 
 #include <iostream>
 #include <vector>
@@ -7,7 +7,7 @@
 #include <algorithm>
 #include "Utils.h"
 
-#define MAX_ITER 200
+#define MAX_ITER 300
 #define GOAL_PROBABILITY 10
 
 class RRTNode
@@ -53,4 +53,4 @@ private:
     double max_rand;
 };
 
-#endif // GYAK_H
+#endif // RRT_H

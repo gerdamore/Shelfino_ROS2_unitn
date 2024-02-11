@@ -1,5 +1,4 @@
 #include "Dubins.h"
-#include "Utils.h"
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -172,7 +171,7 @@ DubinsPath Dubins::get_RSRPath(const vector<pair<Point2d, Point2d>> &tangent_poi
 
     if (tangent_points.size() == 0)
     {
-        std::cout << "No tangent points found" << std::endl;
+        // std::cout << "No tangent points found" << std::endl;
         DubinsPath path;
         path.length = INFINITY;
         return path;
@@ -207,7 +206,7 @@ DubinsPath Dubins::get_RSLPath(const vector<pair<Point2d, Point2d>> &tangent_poi
 
     if (tangent_points.size() < 3)
     {
-        std::cout << "No tangent points found" << endl;
+        // std::cout << "No tangent points found" << endl;
         DubinsPath path;
         path.length = INFINITY;
         return path;
@@ -241,7 +240,7 @@ DubinsPath Dubins::get_LSLPath(const vector<pair<Point2d, Point2d>> &tangent_poi
 {
     if (tangent_points.size() < 2)
     {
-        std::cout << "No tangent points found" << endl;
+        // std::cout << "No tangent points found" << endl;
         DubinsPath path;
         path.length = INFINITY;
         return path;
@@ -276,7 +275,7 @@ DubinsPath Dubins::get_LSRPath(const vector<pair<Point2d, Point2d>> &tangent_poi
 
     if (tangent_points.size() < 4)
     {
-        std::cout << "No tangent points found" << endl;
+        // std::cout << "No tangent points found" << endl;
         DubinsPath path;
         path.length = INFINITY;
         return path;
@@ -331,10 +330,10 @@ DubinsPath Dubins::get_CSCPath(Circle start_left, Circle start_right, Circle end
 
     // get the smallest length
     // print lenghts
-    std::cout << "RSR_length: " << RSR_length.length << endl;
-    std::cout << "LSL_length: " << LSL_length.length << endl;
-    std::cout << "RSL_length: " << RSL_length.length << endl;
-    std::cout << "LSR_length: " << LSR_length.length << endl;
+    // std::cout << "RSR_length: " << RSR_length.length << endl;
+    // std::cout << "LSL_length: " << LSL_length.length << endl;
+    // std::cout << "RSL_length: " << RSL_length.length << endl;
+    // std::cout << "LSR_length: " << LSR_length.length << endl;
 
     // get shortest path
     if (RSR_length.length < LSL_length.length && RSR_length.length < RSL_length.length && RSR_length.length < LSR_length.length)
@@ -482,10 +481,10 @@ DubinsPath Dubins::get_CCCPath(Circle start_left, Circle start_right, Circle end
 
     // RLR
     DubinsPath RLR_length = get_RLRPath(start_right, end_right);
-    std::cout << "RLR_length: " << RLR_length.length << endl;
-    // LRL
+    // std::cout << "RLR_length: " << RLR_length.length << endl;
+    //  LRL
     DubinsPath LRL_length = get_LRLPath(start_left, end_left);
-    std::cout << "LRL_length: " << LRL_length.length << endl;
+    // std::cout << "LRL_length: " << LRL_length.length << endl;
 
     // return the shortest path
     if (RLR_length.length < LRL_length.length)
