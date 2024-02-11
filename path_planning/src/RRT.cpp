@@ -596,6 +596,83 @@ double get_RLRPath(Circle c1, Circle c2)
     return (arclength + arclength1 + arclength3);
 }
 
+double get_LRLPath(Circle c1, Circle c2)
+{
+    double distance = get_distance(c1.x, c1.y, c2.x, c2.y);
+    double theta = acos(distance / (4 * MINRADIUS));
+    if (distance > 4 * MINRADIUS)
+    {
+        cout << "No tangent points found" << endl;
+        return INFINITY;
+    }
+    Point2d vec1, vec2;
+    vec1.first = c2.x - c1.x;
+    vec1.second = c2.y - c1.y;
+    double theta1 = atan2(vec1.second, vec1.first);
+    // for an LRL trajectory we want to add \theta from it to obtain a circle “to the right"
+    theta = theta1 + theta;
+    cout << theta << endl;
+
+    Circle c3;
+    c3.x = c1.x + 2 * MINRADIUS * cos(theta);
+    c3.y = c1.y + 2 * MINRADIUS * sin(theta);
+    c3.radius = MINRADIUS;
+    cout << "Circle 3: " << c3.x << ", " << c3.y << endl;
+    Point2d tangent_point1;
+    tangent_point1.first = (c1.x + c3.x) / 2;
+    tangent_point1.second = (c1.y + c3.y) / 2;
+
+    vec1.first = start_x - c1.x;
+    vec1.second = start_y - c1.y;
+    // V2 = end - center
+    vec2.first = tangent_point1.first - c1.x;
+    vec2.second = tangent_point1.second - c1.y;
+    // Check direction v1 rotated to end up at v2
+    theta = atan2(vec2.second, vec2.first) - atan2(vec1.second, vec1.first);
+    // right turn is a negative rotation
+    if (theta < 0)
+        theta += 2.0 * PI;
+    double arclength = fabs(MINRADIUS * theta);
+    double timesteps = arclength / DELTA;
+
+    Point2d tangent_point2;
+    tangent_point2.first = (c2.x + c3.x) / 2;
+    tangent_point2.second = (c2.y + c3.y) / 2;
+
+    // V1 = start - center
+    vec1.first = tangent_point1.first - c3.x;
+    vec1.second = tangent_point1.second - c3.y;
+    // V2 = end - center
+    vec2.first = tangent_point2.first - c3.x;
+    vec2.second = tangent_point2.second - c3.y;
+    // Check direction v1 rotated to end up at v2
+    theta = atan2(vec2.second, vec2.first) - atan2(vec1.second, vec1.first);
+    // right turn is a negative rotation
+    if (theta > 0)
+        theta -= 2.0 * PI;
+    double arclength1 = fabs(MINRADIUS * theta);
+    double timesteps1 = arclength1 / DELTA;
+
+    vec1.first = tangent_point2.first - c2.x;
+    vec1.second = tangent_point2.second - c2.y;
+    // V2 = end - center
+    vec2.first = goal_x - c2.x;
+    vec2.second = goal_y - c2.y;
+    // Check direction v1 rotated to end up at v2
+    theta = atan2(vec2.second, vec2.first) - atan2(vec1.second, vec1.first);
+    // right turn is a negative rotation
+    if (theta < 0)
+        theta += 2.0 * PI;
+    double arclength3 = fabs(MINRADIUS * theta);
+    double timesteps3 = arclength3 / DELTA;
+
+    // PRINT RESULTS
+    cout << "arclength: " << arclength << ", timesteps: " << timesteps << endl;
+    cout << "arclength1: " << arclength1 << ", timesteps1: " << timesteps1 << endl;
+    cout << "arclength3: " << arclength3 << ", timesteps3: " << timesteps3 << endl;
+    return (arclength + arclength1 + arclength3);
+}
+
 void get_CCCPath()
 {
     Circle start_left;
@@ -648,6 +725,9 @@ void get_CCCPath()
     // RLR
     double RLR_length = get_RLRPath(start_right, end_right);
     cout << "RLR_length: " << RLR_length << endl;
+    // LRL
+    double LRL_length = get_LRLPath(start_left, end_left);
+    cout << "LRL_length: " << LRL_length << endl;
 }
 
 RRTNode RRT::get_path(RRTNode *from_node, RRTNode to_node, int parent_index)
