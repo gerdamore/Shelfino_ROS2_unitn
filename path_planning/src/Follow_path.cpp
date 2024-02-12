@@ -34,6 +34,8 @@ public:
             "/shelfino0/amcl_pose", 10, std::bind(&MinimalSubscriber::topic_callback_init_pose, this, _1));
         subscription_obstacles_ = this->create_subscription<obstacles_msgs::msg::ObstacleArrayMsg>(
             "/obstacles", 10, std::bind(&MinimalSubscriber::topic_callback_obstacles, this, std::placeholders::_1));
+        subscription_victims_ = this->create_subscription<obstacles_msgs::msg::ObstacleArrayMsg>(
+            "/victims", 10, std::bind(&MinimalSubscriber::topic_callback_victims, this, std::placeholders::_1));
         RCLCPP_INFO(this->get_logger(), "Finished setting up listener");
     }
 
@@ -55,7 +57,11 @@ private:
         RCLCPP_INFO(this->get_logger(), "Boundary: min: %f, max: %f", boundary[0], boundary[1]);
         for (auto &obs : obstacleList)
         {
-            RCLCPP_INFO(this->get_logger(), "Obstacle: x: %f, y: %f", obs.x, obs.y);
+            RCLCPP_INFO(this->get_logger(), "Obstacle: bl: x: %f, y: %f, br: x: %f, y: %f, tr: x: %f, y: %f, tl: x: %f, y: %f, radius: %f", obs.bl.x, obs.bl.y, obs.br.x, obs.br.y, obs.tr.x, obs.tr.y, obs.tl.x, obs.tl.y, obs.radius);
+        }
+        for (auto &obs : victimList)
+        {
+            RCLCPP_INFO(this->get_logger(), "Victim: x: %f, y: %f", obs.x, obs.y);
         }
 
         RRT rrt(start, goal, boundary, obstacleList);
@@ -111,15 +117,15 @@ private:
         {
             goal_pose_.x = pose.position.x;
             goal_pose_.y = pose.position.y;
-            if (goal_pose_.x < 0)
-                goal_pose_.x += 0.5;
-            else
-                goal_pose_.x -= 0.5;
+            // if (goal_pose_.x < 0)
+            //     goal_pose_.x += 0.5;
+            // else
+            //     goal_pose_.x -= 0.5;
 
-            if (goal_pose_.y < 0)
-                goal_pose_.y += 0.5;
-            else
-                goal_pose_.y -= 0.5;
+            // if (goal_pose_.y < 0)
+            //     goal_pose_.y += 0.5;
+            // else
+            //     goal_pose_.y -= 0.5;
 
             RCLCPP_INFO(this->get_logger(), "Goal pose - x: %f, y: %f", goal_pose_.x, goal_pose_.y);
         }
@@ -139,11 +145,36 @@ private:
         obstacleList.clear();
         for (const auto &obstacle : msg->obstacles)
         {
-            Obstacle obs;
-            obs.x = obstacle.polygon.points[0].x;
-            obs.y = obstacle.polygon.points[0].y;
+            Box obs;
+            Point2d bl, br, tr, tl;
+            // points start from bottom left and go clockwise
+            bl.x = obstacle.polygon.points[0].x;
+            bl.y = obstacle.polygon.points[0].y;
+            br.x = obstacle.polygon.points[1].x;
+            br.y = obstacle.polygon.points[1].y;
+            tr.x = obstacle.polygon.points[2].x;
+            tr.y = obstacle.polygon.points[2].y;
+            tl.x = obstacle.polygon.points[3].x;
+            tl.y = obstacle.polygon.points[3].y;
+            obs.bl = bl;
+            obs.br = br;
+            obs.tr = tr;
+            obs.tl = tl;
             obs.radius = obstacle.radius;
             obstacleList.push_back(obs);
+        }
+    }
+
+    void topic_callback_victims(const obstacles_msgs::msg::ObstacleArrayMsg::SharedPtr msg)
+    {
+        victimList.clear();
+        for (const auto &victim : msg->obstacles)
+        {
+            Obstacle obs;
+            obs.x = victim.polygon.points[0].x;
+            obs.y = victim.polygon.points[0].y;
+            obs.radius = victim.radius; // this will be the weight of he victim
+            victimList.push_back(obs);
         }
     }
 
@@ -152,9 +183,11 @@ private:
     rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr subscription_gates_;
     rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr subscription_initial_pose_;
     rclcpp::Subscription<obstacles_msgs::msg::ObstacleArrayMsg>::SharedPtr subscription_obstacles_;
+    rclcpp::Subscription<obstacles_msgs::msg::ObstacleArrayMsg>::SharedPtr subscription_victims_;
     Point2d initial_pose_;
     Point2d goal_pose_;
-    vector<Obstacle> obstacleList;
+    vector<Box> obstacleList;
+    vector<Obstacle> victimList;
 };
 
 int main(int argc, char *argv[])

@@ -28,7 +28,7 @@ public:
 class RRT
 {
 public:
-    RRT(RRTNode start, RRTNode goal, std::vector<double> boundar, std::vector<Obstacle> obstacleList);
+    RRT(RRTNode start, RRTNode goal, std::vector<double> boundar, std::vector<Box> obstacleList);
 
     void print_node(int ind, RRTNode node);
 
@@ -53,7 +53,7 @@ private:
     double robot_radius;
     double min_rand;
     double max_rand;
-    std::vector<Obstacle> obstacleList;
+    std::vector<Box> obstacleList;
 };
 
 #endif // RRT_H

@@ -28,6 +28,15 @@ struct Point2d
     }
 };
 
+struct Box
+{
+    Point2d bl;
+    Point2d br;
+    Point2d tr;
+    Point2d tl;
+    double radius;
+};
+
 struct PointDubins
 {
     double x;
@@ -36,5 +45,7 @@ struct PointDubins
 };
 
 double get_euclidean_distance(double x1, double y1, double x2, double y2);
+
+bool check_collision(double x, double y, Box obstacle);
 
 #endif // UTILS_H

@@ -30,7 +30,7 @@ RRTNode::RRTNode(double x, double y, double yaw)
     this->parent = -1;
 }
 
-RRT::RRT(RRTNode start, RRTNode goal, std::vector<double> boundary, std::vector<Obstacle> obstacleList)
+RRT::RRT(RRTNode start, RRTNode goal, std::vector<double> boundary, std::vector<Box> obstacleList)
 {
     this->start = RRTNode(start.x, start.y, start.yaw);
     this->end = RRTNode(goal.x, goal.y, goal.yaw);
@@ -60,26 +60,7 @@ bool RRT::is_collision(RRTNode node)
         // check collision accross path_x and path_y of node
         for (int i = 0; i < node.path_x.size(); i++)
         {
-            double distance = get_euclidean_distance(node.path_x[i], node.path_y[i], obstacle.x, obstacle.y);
-            if (distance <= obstacle.radius + robot_radius)
-            {
-                return true;
-            }
-            // check collision with boundary
-            if (node.path_x[i] < min_rand || node.path_x[i] > max_rand || node.path_y[i] < min_rand || node.path_y[i] > max_rand)
-            {
-                return true;
-            }
-        }
-        for (int i = 0; i < node.path_y.size(); i++)
-        {
-            double distance = get_euclidean_distance(node.path_x[i], node.path_y[i], obstacle.x, obstacle.y);
-            if (distance <= obstacle.radius + robot_radius)
-            {
-                return true;
-            }
-            // check collision with boundary
-            if (node.path_x[i] < min_rand || node.path_x[i] > max_rand || node.path_y[i] < min_rand || node.path_y[i] > max_rand)
+            if (check_collision(node.path_x[i], node.path_y[i], obstacle))
             {
                 return true;
             }
@@ -276,40 +257,40 @@ int RRT::get_closest_index(RRTNode rnd_node)
     return std::distance(std::begin(dlist), result);
 }
 
-int main(int argc, char *argv[])
-{
-    double initial_x_ = 0;
-    double initial_y_ = 0;
-    double goal_x_ = std::stod(argv[1]);
-    double goal_y_ = std::stod(argv[2]);
+// int main(int argc, char *argv[])
+// {
+//     double initial_x_ = 0;
+//     double initial_y_ = 0;
+//     double goal_x_ = std::stod(argv[1]);
+//     double goal_y_ = std::stod(argv[2]);
 
-    std::uniform_real_distribution<> x_dis(-5, 5);
-    std::uniform_real_distribution<> y_dis(-5, 5);
-    std::uniform_real_distribution<> size_dis(0.5, 1);
-    std::random_device rd;
-    std::mt19937 gen(rd()); // Declare and initialize the random number generator
-    std::vector<Obstacle> obstacleList;
-    int i = 0;
-    do
-    {
-        Obstacle obs;
-        obs.radius = size_dis(gen);
-        obs.x = x_dis(gen);
-        obs.y = y_dis(gen);
-        obstacleList.push_back(obs);
-        i++;
-    } while (i < 5);
+//     std::uniform_real_distribution<> x_dis(-5, 5);
+//     std::uniform_real_distribution<> y_dis(-5, 5);
+//     std::uniform_real_distribution<> size_dis(0.5, 1);
+//     std::random_device rd;
+//     std::mt19937 gen(rd()); // Declare and initialize the random number generator
+//     std::vector<Obstacle> obstacleList;
+//     int i = 0;
+//     do
+//     {
+//         Obstacle obs;
+//         obs.radius = size_dis(gen);
+//         obs.x = x_dis(gen);
+//         obs.y = y_dis(gen);
+//         obstacleList.push_back(obs);
+//         i++;
+//     } while (i < 5);
 
-    RRTNode start(initial_x_, initial_y_, 0);
-    RRTNode goal(goal_x_, goal_y_, 0);
-    std::vector<double> boundary = {-3.1, 3.1};
-    RRT rrt(start, goal, boundary, obstacleList);
-    std::vector<Point2d> path = rrt.planning();
-    std::ofstream outfile("points.csv");
-    for (const auto &point : path)
-    {
-        outfile << point.x << "," << point.y << ", 0" << std::endl;
-    }
-    outfile.close();
-    system("python3 print.py");
-}
+//     RRTNode start(initial_x_, initial_y_, 0);
+//     RRTNode goal(goal_x_, goal_y_, 0);
+//     std::vector<double> boundary = {-3.1, 3.1};
+//     RRT rrt(start, goal, boundary, obstacleList);
+//     std::vector<Point2d> path = rrt.planning();
+//     std::ofstream outfile("points.csv");
+//     for (const auto &point : path)
+//     {
+//         outfile << point.x << "," << point.y << ", 0" << std::endl;
+//     }
+//     outfile.close();
+//     system("python3 print.py");
+// }

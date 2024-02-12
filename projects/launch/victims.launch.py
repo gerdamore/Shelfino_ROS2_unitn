@@ -46,6 +46,7 @@ def generate_launch_description():
     shelfino_nav2_pkg  = get_package_share_directory('shelfino_navigation')
     shelfino_gaze_pkg  = get_package_share_directory('shelfino_gazebo')
     map_env_pkg        = get_package_share_directory('map_pkg')
+    planning_pkg       = get_package_share_directory('path_planning')
 
     nav2_params_file_path    = os.path.join(shelfino_nav2_pkg, 'config', 'shelfino.yaml')
     map_env_params_file_path = os.path.join(map_env_pkg, 'config', 'map_config.yaml')
@@ -142,6 +143,15 @@ def generate_launch_description():
     ]
 
     # List of nodes to launch
+    planner_node = Node (
+        package='path_planning',
+        executable='Follow_path',
+        name='Follow_path',
+        output='screen',
+        parameters=[
+            {'use_sim_time': use_sim_time}
+        ],
+    )
     gazebo_launch = IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
                 os.path.join(shelfino_gaze_pkg, 'launch'),
@@ -167,6 +177,8 @@ def generate_launch_description():
                 'map_env_params_file': map_env_params_file,
             }.items()
         )
+    
+
     
     nodes = GroupAction([
         IncludeLaunchDescription(
@@ -198,6 +210,7 @@ def generate_launch_description():
 
     # LaunchDescription with the additional launch files
     ld = LaunchDescription()
+    ld.add_action(planner_node)
 
     for launch_arg in launch_args:
         ld.add_action(launch_arg)
