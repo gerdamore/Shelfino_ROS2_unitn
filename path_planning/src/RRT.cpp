@@ -30,12 +30,11 @@ RRTNode::RRTNode(double x, double y, double yaw)
     this->parent = -1;
 }
 
-RRT::RRT(RRTNode start, RRTNode goal, std::vector<double> boundary, std::vector<Box> obstacleList)
+RRT::RRT(RRTNode start, RRTNode goal, Map map, std::vector<Box> obstacleList)
 {
     this->start = RRTNode(start.x, start.y, start.yaw);
     this->end = RRTNode(goal.x, goal.y, goal.yaw);
-    this->min_rand = boundary[0];
-    this->max_rand = boundary[1];
+    this->map = map;
     this->robot_radius = 0.5;
     this->obstacleList = obstacleList;
     node_list.push_back(start);
@@ -60,7 +59,7 @@ bool RRT::is_collision(RRTNode node)
         // check collision accross path_x and path_y of node
         for (int i = 0; i < node.path_x.size(); i++)
         {
-            if (check_collision(node.path_x[i], node.path_y[i], obstacle))
+            if (check_collision(node.path_x[i], node.path_y[i], obstacle) && check_inside_map(node.path_x[i], node.path_y[i], map))
             {
                 return true;
             }
@@ -230,12 +229,18 @@ RRTNode RRT::get_path(RRTNode *from_node, RRTNode to_node, int parent_index)
 
 RRTNode RRT::get_random_node()
 {
-    if (rand() % 100 > 10)
+    if (rand() % 100 > GOAL_PROBABILITY)
     {
-        double rnd_x = ((double)rand() / RAND_MAX) * (max_rand - min_rand) + min_rand;
-        double rnd_y = ((double)rand() / RAND_MAX) * (max_rand - min_rand) + min_rand;
-        double rnd_yaw = ((double)rand() / RAND_MAX) * (2 * M_PI) - M_PI;
-        return RRTNode(rnd_x, rnd_y, 0);
+        std::uniform_real_distribution<> x_dis(map.bl.x, map.br.x);
+        std::uniform_real_distribution<> theta_dis(-M_PI, M_PI);
+        std::uniform_real_distribution<> y_dis(map.bl.y, map.tl.y);
+
+        std::random_device rd;
+        std::mt19937 gen(rd()); // Declare and initialize the random number generator
+        double x = x_dis(gen);
+        double y = y_dis(gen);
+        double theta = theta_dis(gen);
+        return RRTNode(x, y, theta);
     }
     else
     {

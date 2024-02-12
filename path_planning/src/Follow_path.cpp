@@ -11,6 +11,7 @@
 #include "geometry_msgs/msg/pose_array.hpp"
 #include "obstacles_msgs/msg/obstacle_msg.hpp"
 #include "obstacles_msgs/msg/obstacle_array_msg.hpp"
+#include "geometry_msgs/msg/polygon.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "RRT.h"
 #include "Utils.h"
@@ -36,6 +37,8 @@ public:
             "/obstacles", 10, std::bind(&MinimalSubscriber::topic_callback_obstacles, this, std::placeholders::_1));
         subscription_victims_ = this->create_subscription<obstacles_msgs::msg::ObstacleArrayMsg>(
             "/victims", 10, std::bind(&MinimalSubscriber::topic_callback_victims, this, std::placeholders::_1));
+        subscription_map_ = this->create_subscription<geometry_msgs::msg::Polygon>(
+            "/map_borders", 10, std::bind(&MinimalSubscriber::topic_callback_map, this, std::placeholders::_1));
         RCLCPP_INFO(this->get_logger(), "Finished setting up listener");
     }
 
@@ -54,7 +57,7 @@ private:
         // print start goal boundary obstacles list
         RCLCPP_INFO(this->get_logger(), "Start: x: %f, y: %f", start.x, start.y);
         RCLCPP_INFO(this->get_logger(), "Goal: x: %f, y: %f", goal.x, goal.y);
-        RCLCPP_INFO(this->get_logger(), "Boundary: min: %f, max: %f", boundary[0], boundary[1]);
+        RCLCPP_INFO(this->get_logger(), "Map: bl: x: %f, y: %f, br: x: %f, y: %f, tr: x: %f, y: %f, tl: x: %f, y: %f", map.bl.x, map.bl.y, map.br.x, map.br.y, map.tr.x, map.tr.y, map.tl.x, map.tl.y);
         for (auto &obs : obstacleList)
         {
             RCLCPP_INFO(this->get_logger(), "Obstacle: bl: x: %f, y: %f, br: x: %f, y: %f, tr: x: %f, y: %f, tl: x: %f, y: %f, radius: %f", obs.bl.x, obs.bl.y, obs.br.x, obs.br.y, obs.tr.x, obs.tr.y, obs.tl.x, obs.tl.y, obs.radius);
@@ -64,8 +67,19 @@ private:
             RCLCPP_INFO(this->get_logger(), "Victim: x: %f, y: %f", obs.x, obs.y);
         }
 
-        RRT rrt(start, goal, boundary, obstacleList);
+        // set goal to first victim
+        if (victimList.size() > 0)
+        {
+            goal.x = victimList[0].x;
+            goal.y = victimList[0].y;
+        }
+
+        RRT rrt(start, goal, map, obstacleList);
         std::vector<Point2d> RRT_path = rrt.planning();
+
+        
+
+
         RCLCPP_INFO(this->get_logger(), "Path planning done");
         nav_msgs::msg::Path full_path;
         full_path.header.stamp = this->now();
@@ -178,16 +192,30 @@ private:
         }
     }
 
+    void topic_callback_map(const geometry_msgs::msg::Polygon::SharedPtr msg)
+    {
+        map.bl.x = msg->points[0].x;
+        map.bl.y = msg->points[0].y;
+        map.br.x = msg->points[1].x;
+        map.br.y = msg->points[1].y;
+        map.tr.x = msg->points[2].x;
+        map.tr.y = msg->points[2].y;
+        map.tl.x = msg->points[3].x;
+        map.tl.y = msg->points[3].y;
+    }
+
     rclcpp_action::Client<FollowPath>::SharedPtr client_ptr_;
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
     rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr subscription_gates_;
     rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr subscription_initial_pose_;
     rclcpp::Subscription<obstacles_msgs::msg::ObstacleArrayMsg>::SharedPtr subscription_obstacles_;
     rclcpp::Subscription<obstacles_msgs::msg::ObstacleArrayMsg>::SharedPtr subscription_victims_;
+    rclcpp::Subscription<geometry_msgs::msg::Polygon>::SharedPtr subscription_map_;
     Point2d initial_pose_;
     Point2d goal_pose_;
     vector<Box> obstacleList;
     vector<Obstacle> victimList;
+    Map map;
 };
 
 int main(int argc, char *argv[])

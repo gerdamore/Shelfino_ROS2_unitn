@@ -18,3 +18,12 @@ bool check_collision(double x, double y, Box obstacle)
     }
     return false;
 }
+
+bool check_inside_map(double x, double y, Map map)
+{
+    if (x >= map.bl.x && x <= map.br.x && y >= map.bl.y && y <= map.tl.y)
+    {
+        return true;
+    }
+    return false;
+}

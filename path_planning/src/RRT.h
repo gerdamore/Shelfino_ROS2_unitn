@@ -7,7 +7,7 @@
 #include <algorithm>
 #include "Utils.h"
 
-#define MAX_ITER 1000
+#define MAX_ITER 300
 #define GOAL_PROBABILITY 10
 
 class RRTNode
@@ -28,7 +28,7 @@ public:
 class RRT
 {
 public:
-    RRT(RRTNode start, RRTNode goal, std::vector<double> boundar, std::vector<Box> obstacleList);
+    RRT(RRTNode start, RRTNode goal, Map map, std::vector<Box> obstacleList);
 
     void print_node(int ind, RRTNode node);
 
@@ -51,8 +51,7 @@ private:
     RRTNode end;
     std::vector<RRTNode> node_list;
     double robot_radius;
-    double min_rand;
-    double max_rand;
+    Map map;
     std::vector<Box> obstacleList;
 };
 
