@@ -3,6 +3,13 @@
 
 #include <cmath>
 
+struct Obstacle
+{
+    double x;
+    double y;
+    double radius;
+};
+
 struct Point2d
 {
     double x;

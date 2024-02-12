@@ -360,7 +360,7 @@ DubinsPath Dubins::get_RLRPath(const Circle &c1, const Circle &c2)
     double theta = acos(distance / (4 * MINRADIUS));
     if (distance > 4 * MINRADIUS)
     {
-        std::cout << "No tangent points found" << endl;
+        // std::cout << "No tangent points found" << endl;
         DubinsPath path;
         path.length = INFINITY;
         return path;
@@ -418,7 +418,7 @@ DubinsPath Dubins::get_LRLPath(const Circle &c1, const Circle &c2)
     double theta = acos(distance / (4 * MINRADIUS));
     if (distance > 4 * MINRADIUS)
     {
-        std::cout << "No tangent points found" << endl;
+        // std::cout << "No tangent points found" << endl;
         DubinsPath path;
         path.length = INFINITY;
         return path;

@@ -2,7 +2,9 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <tuple>
 #include <fstream>
+#include <random>
 #include "RRT.h"
 #include "Dubins.h"
 
@@ -28,13 +30,14 @@ RRTNode::RRTNode(double x, double y, double yaw)
     this->parent = -1;
 }
 
-RRT::RRT(RRTNode start, RRTNode goal, std::vector<double> boundary)
+RRT::RRT(RRTNode start, RRTNode goal, std::vector<double> boundary, std::vector<Obstacle> obstacleList)
 {
     this->start = RRTNode(start.x, start.y, start.yaw);
     this->end = RRTNode(goal.x, goal.y, goal.yaw);
     this->min_rand = boundary[0];
     this->max_rand = boundary[1];
     this->robot_radius = 0.5;
+    this->obstacleList = obstacleList;
     node_list.push_back(start);
 }
 
@@ -50,23 +53,66 @@ void RRT::print_node(int ind, RRTNode node)
     // cout << endl;
 }
 
+bool RRT::is_collision(RRTNode node)
+{
+    for (const auto &obstacle : obstacleList)
+    {
+        // check collision accross path_x and path_y of node
+        for (int i = 0; i < node.path_x.size(); i++)
+        {
+            double distance = get_euclidean_distance(node.path_x[i], node.path_y[i], obstacle.x, obstacle.y);
+            if (distance <= obstacle.radius + robot_radius)
+            {
+                return true;
+            }
+            // check collision with boundary
+            if (node.path_x[i] < min_rand || node.path_x[i] > max_rand || node.path_y[i] < min_rand || node.path_y[i] > max_rand)
+            {
+                return true;
+            }
+        }
+        for (int i = 0; i < node.path_y.size(); i++)
+        {
+            double distance = get_euclidean_distance(node.path_x[i], node.path_y[i], obstacle.x, obstacle.y);
+            if (distance <= obstacle.radius + robot_radius)
+            {
+                return true;
+            }
+            // check collision with boundary
+            if (node.path_x[i] < min_rand || node.path_x[i] > max_rand || node.path_y[i] < min_rand || node.path_y[i] > max_rand)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 std::vector<Point2d> RRT::planning()
 {
     std::vector<Point2d> path;
 
-    for (int i = 0; i < 20 - 1; i++)
+    for (int i = 0; i < MAX_ITER - 1; i++)
     {
         RRTNode rnd = get_random_node();
-        int nearest_ind = get_closest_index(node_list, rnd);
+        int nearest_ind = get_closest_index(rnd);
         RRTNode new_node = get_path(&node_list[nearest_ind], rnd, nearest_ind);
-        print_node(i, new_node);
+        // print_node(i, new_node);
+        if (is_collision(new_node))
+        {
+            continue;
+        }
         node_list.push_back(new_node);
     }
 
     // if possible just have one Dubins path to the goal
     RRTNode Dubins_node = get_path(&start, end, 0);
-    print_node(-1, Dubins_node);
-    node_list.push_back(Dubins_node);
+    // print_node(-1, Dubins_node);
+    if (!is_collision(Dubins_node))
+    {
+        node_list.push_back(Dubins_node);
+    }
 
     RRTNode shortest = get_shortest_path();
     print_node(-1, shortest);
@@ -216,7 +262,7 @@ RRTNode RRT::get_random_node()
     }
 }
 
-int RRT::get_closest_index(std::vector<RRTNode> node_list, RRTNode rnd_node)
+int RRT::get_closest_index(RRTNode rnd_node)
 {
     std::vector<double> dlist;
     for (const auto &node : node_list)
@@ -237,10 +283,27 @@ int main(int argc, char *argv[])
     double goal_x_ = std::stod(argv[1]);
     double goal_y_ = std::stod(argv[2]);
 
+    std::uniform_real_distribution<> x_dis(-5, 5);
+    std::uniform_real_distribution<> y_dis(-5, 5);
+    std::uniform_real_distribution<> size_dis(0.5, 1);
+    std::random_device rd;
+    std::mt19937 gen(rd()); // Declare and initialize the random number generator
+    std::vector<Obstacle> obstacleList;
+    int i = 0;
+    do
+    {
+        Obstacle obs;
+        obs.radius = size_dis(gen);
+        obs.x = x_dis(gen);
+        obs.y = y_dis(gen);
+        obstacleList.push_back(obs);
+        i++;
+    } while (i < 5);
+
     RRTNode start(initial_x_, initial_y_, 0);
     RRTNode goal(goal_x_, goal_y_, 0);
     std::vector<double> boundary = {-3.1, 3.1};
-    RRT rrt(start, goal, boundary);
+    RRT rrt(start, goal, boundary, obstacleList);
     std::vector<Point2d> path = rrt.planning();
     std::ofstream outfile("points.csv");
     for (const auto &point : path)

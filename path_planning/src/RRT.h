@@ -7,7 +7,7 @@
 #include <algorithm>
 #include "Utils.h"
 
-#define MAX_ITER 300
+#define MAX_ITER 1000
 #define GOAL_PROBABILITY 10
 
 class RRTNode
@@ -28,7 +28,7 @@ public:
 class RRT
 {
 public:
-    RRT(RRTNode start, RRTNode goal, std::vector<double> boundary);
+    RRT(RRTNode start, RRTNode goal, std::vector<double> boundar, std::vector<Obstacle> obstacleList);
 
     void print_node(int ind, RRTNode node);
 
@@ -43,7 +43,9 @@ private:
 
     RRTNode get_random_node();
 
-    int get_closest_index(std::vector<RRTNode> node_list, RRTNode rnd_node);
+    int get_closest_index(RRTNode rnd_node);
+
+    bool is_collision(RRTNode node);
 
     RRTNode start;
     RRTNode end;
@@ -51,6 +53,7 @@ private:
     double robot_radius;
     double min_rand;
     double max_rand;
+    std::vector<Obstacle> obstacleList;
 };
 
 #endif // RRT_H
