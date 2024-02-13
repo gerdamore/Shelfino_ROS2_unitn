@@ -7,33 +7,34 @@
 #include <random>
 #include "RRT.h"
 #include "Dubins.h"
-
+#include "Utils.h"
 using namespace std;
 
 RRTNode::RRTNode()
 {
-    x = 0.0;
-    y = 0.0;
-    yaw = 0.0;
+    PointDubins point(0, 0, 0);
+    this->point = point;
+    path_x = {};
+    path_y = {};
+    path_yaw = {};
     cost = 0.0;
     parent = -1;
 }
 RRTNode::RRTNode(double x, double y, double yaw)
 {
-    this->x = x;
-    this->y = y;
+    PointDubins point(x, y, yaw);
+    this->point = point;
     this->path_x = {};
     this->path_y = {};
     this->path_yaw = {};
-    this->yaw = yaw;
     this->cost = 0.0;
     this->parent = -1;
 }
 
 RRT::RRT(RRTNode start, RRTNode goal, Map map, std::vector<Box> obstacleList)
 {
-    this->start = RRTNode(start.x, start.y, start.yaw);
-    this->end = RRTNode(goal.x, goal.y, goal.yaw);
+    this->start = start;
+    this->end = goal;
     this->map = map;
     this->robot_radius = 0.5;
     this->obstacleList = obstacleList;
@@ -42,7 +43,7 @@ RRT::RRT(RRTNode start, RRTNode goal, Map map, std::vector<Box> obstacleList)
 
 void RRT::print_node(int ind, RRTNode node)
 {
-    std::cout << "ind: " << ind << " x: " << node.x << ", y: " << node.y << ", parent: " << node.parent << ", cost: " << node.cost << endl;
+    std::cout << "ind: " << ind << " x: " << node.point.x << " y: " << node.point.y << " yaw: " << node.point.theta << " cost: " << node.cost << " parent: " << node.parent << std::endl;
 
     // while (node.parent != -1)
     // {
@@ -69,16 +70,15 @@ bool RRT::is_collision(RRTNode node)
     return false;
 }
 
-std::vector<Point2d> RRT::planning()
+std::vector<PointDubins> RRT::planning()
 {
-    std::vector<Point2d> path;
-
-    for (int i = 0; i < MAX_ITER - 1; i++)
+    for (int i = 0; i < 20 - 1; i++)
     {
         RRTNode rnd = get_random_node();
+
         int nearest_ind = get_closest_index(rnd);
         RRTNode new_node = get_path(&node_list[nearest_ind], rnd, nearest_ind);
-        // print_node(i, new_node);
+
         if (is_collision(new_node))
         {
             continue;
@@ -88,34 +88,34 @@ std::vector<Point2d> RRT::planning()
 
     // if possible just have one Dubins path to the goal
     RRTNode Dubins_node = get_path(&start, end, 0);
-    // print_node(-1, Dubins_node);
+    print_node(-1, Dubins_node);
     if (!is_collision(Dubins_node))
     {
+        cout << "Dubins path to goal found!" << endl;
         node_list.push_back(Dubins_node);
     }
 
     RRTNode shortest = get_shortest_path();
-    print_node(-1, shortest);
-    if (shortest.x == 0 && shortest.y == 0)
+    if (shortest.point.x == 0 && shortest.point.y == 0)
     {
         cout << "No path found!" << endl;
-        return path;
+        return {};
     }
     return get_final_path(shortest);
 }
 
-std::vector<Point2d> RRT::get_final_path(RRTNode node)
+std::vector<PointDubins> RRT::get_final_path(RRTNode node)
 {
-    std::vector<Point2d> path;
-    path.push_back(Point2d(end.x, end.y));
-    path.push_back(Point2d(node.x, node.y));
-    // print_node(-1, node);
+    std::vector<PointDubins> path;
+    // path.push_back(PointDubins(end.x, end.y, end.yaw));
+    path.push_back(node.point);
     for (int i = node.path_x.size() - 1; i >= 0; i--)
     {
         double ix = node.path_x[i];
         double iy = node.path_y[i];
-        path.push_back(Point2d(ix, iy));
-        // cout << "ix: " << ix << ", iy: " << iy << endl;
+        double itheta = node.path_yaw[i];
+        PointDubins point(ix, iy, itheta);
+        path.push_back(point);
     }
     RRTNode parent_node = node_list[node.parent];
     int i = 0;
@@ -123,19 +123,22 @@ std::vector<Point2d> RRT::get_final_path(RRTNode node)
     {
         // print_node(-1, parent_node);
         int input;
-        path.push_back(Point2d(parent_node.x, parent_node.y));
+        PointDubins point(parent_node.point.x, parent_node.point.y, parent_node.point.theta);
+        path.push_back(point);
         for (int i = parent_node.path_x.size() - 1; i >= 0; i--)
         {
             double ix = parent_node.path_x[i];
             double iy = parent_node.path_y[i];
-            path.push_back(Point2d(ix, iy));
+            double itheta = parent_node.path_yaw[i];
+            PointDubins point(ix, iy, itheta);
+            path.push_back(point);
             // cout << "ix: " << ix << ", iy: " << iy << endl;
         }
         int parent_index = parent_node.parent;
         parent_node.parent = -1;
         parent_node = node_list[parent_index];
     }
-    path.push_back(Point2d(start.x, start.y));
+    path.push_back(start.point);
     return path;
 }
 
@@ -145,10 +148,10 @@ RRTNode RRT::get_shortest_path()
     std::vector<int> goal_indexes;
     for (int i = 0; i < node_list.size(); i++)
     {
-        const RRTNode &node = node_list[i];
-        double distance = get_euclidean_distance(node.x, node.y, end.x, end.y);
-        // cout << "i: " << i << ", x: " << node.x << ", y: " << node.y << ", distance: " << distance << endl;
-        if (distance <= 0.01)
+        const RRTNode node = node_list[i];
+        double distance = get_euclidean_distance(node.point.x, node.point.y, end.point.x, end.point.y);
+        cout << "distance:" << distance << endl;
+        if (distance <= 0.2)
         {
             goal_indexes.push_back(i);
         }
@@ -180,16 +183,16 @@ RRTNode RRT::get_path(RRTNode *from_node, RRTNode to_node, int parent_index)
     std::vector<double> px, py, pyaw;
 
     // calculate shortest path from node to node with Dubins path
-    Point2d start;
-    start.x = from_node->x;
-    start.y = from_node->y;
-    Point2d goal;
-    goal.x = to_node.x;
-    goal.y = to_node.y;
-    double start_theta = from_node->yaw;
-    double goal_theta = atan2(goal.y - start.y, goal.x - start.x);
+    Point2D start;
+    start.x = from_node->point.x;
+    start.y = from_node->point.y;
+    Point2D goal;
+    goal.x = to_node.point.x;
+    goal.y = to_node.point.y;
 
-    Dubins dubins = Dubins(start, goal, start_theta, goal_theta);
+    to_node.point.theta = atan2(goal.y - start.y, goal.x - start.x);
+
+    Dubins dubins = Dubins(from_node->point, to_node.point);
     DubinsPath path = dubins.get_shortest_path();
     std::vector<PointDubins> trajectory = dubins.get_robot_trajectory(path);
     for (const auto &point : trajectory)
@@ -197,6 +200,8 @@ RRTNode RRT::get_path(RRTNode *from_node, RRTNode to_node, int parent_index)
         px.push_back(point.x);
         py.push_back(point.y);
         pyaw.push_back(point.theta);
+        // print pyaw
+        // cout << point.theta << endl;
     }
     //
     //
@@ -220,9 +225,8 @@ RRTNode RRT::get_path(RRTNode *from_node, RRTNode to_node, int parent_index)
     new_node.path_y = py;
     new_node.path_yaw = pyaw;
     new_node.parent = parent_index;
-    new_node.x = to_node.x;
-    new_node.y = to_node.y;
-    new_node.yaw = goal_theta;
+    PointDubins path_end(px.back(), py.back(), pyaw.back());
+    new_node.point = path_end;
     new_node.cost = from_node->cost + path.length;
     return new_node;
 }
@@ -232,7 +236,7 @@ RRTNode RRT::get_random_node()
     if (rand() % 100 > GOAL_PROBABILITY)
     {
         std::uniform_real_distribution<> x_dis(map.bl.x, map.br.x);
-        std::uniform_real_distribution<> theta_dis(-M_PI, M_PI);
+        std::uniform_real_distribution<> theta_dis(-PI, PI);
         std::uniform_real_distribution<> y_dis(map.bl.y, map.tl.y);
 
         std::random_device rd;
@@ -240,11 +244,12 @@ RRTNode RRT::get_random_node()
         double x = x_dis(gen);
         double y = y_dis(gen);
         double theta = theta_dis(gen);
-        return RRTNode(x, y, theta);
+        RRTNode node(x, y, theta);
+        return node;
     }
     else
     {
-        return RRTNode(end.x, end.y, end.yaw);
+        return end;
     }
 }
 
@@ -253,7 +258,7 @@ int RRT::get_closest_index(RRTNode rnd_node)
     std::vector<double> dlist;
     for (const auto &node : node_list)
     {
-        double distance = pow(node.x - rnd_node.x, 2) + pow(node.y - rnd_node.y, 2);
+        double distance = get_euclidean_distance(node.point.x, node.point.y, rnd_node.point.x, rnd_node.point.y);
         dlist.push_back(distance);
     }
 
@@ -262,40 +267,61 @@ int RRT::get_closest_index(RRTNode rnd_node)
     return std::distance(std::begin(dlist), result);
 }
 
-// int main(int argc, char *argv[])
-// {
-//     double initial_x_ = 0;
-//     double initial_y_ = 0;
-//     double goal_x_ = std::stod(argv[1]);
-//     double goal_y_ = std::stod(argv[2]);
+int main(int argc, char *argv[])
+{
+    double initial_x_ = 0;
+    double initial_y_ = 0;
+    double goal_x_ = std::stod(argv[1]);
+    double goal_y_ = std::stod(argv[2]);
+    double goal_theta_ = std::stod(argv[3]);
 
-//     std::uniform_real_distribution<> x_dis(-5, 5);
-//     std::uniform_real_distribution<> y_dis(-5, 5);
-//     std::uniform_real_distribution<> size_dis(0.5, 1);
-//     std::random_device rd;
-//     std::mt19937 gen(rd()); // Declare and initialize the random number generator
-//     std::vector<Obstacle> obstacleList;
-//     int i = 0;
-//     do
-//     {
-//         Obstacle obs;
-//         obs.radius = size_dis(gen);
-//         obs.x = x_dis(gen);
-//         obs.y = y_dis(gen);
-//         obstacleList.push_back(obs);
-//         i++;
-//     } while (i < 5);
+    std::uniform_real_distribution<> x_dis(-5, 5);
+    std::uniform_real_distribution<> y_dis(-5, 5);
+    std::uniform_real_distribution<> size_dis(0.5, 1);
+    std::random_device rd;
+    std::mt19937 gen(rd()); // Declare and initialize the random number generator
+    std::vector<Box> obstacleList = {};
+    int i = 0;
+    // do
+    // {
+    //     Obstacle obs;
+    //     obs.radius = size_dis(gen);
+    //     obs.x = x_dis(gen);
+    //     obs.y = y_dis(gen);
+    //     obstacleList.push_back(obs);
+    //     i++;
+    // } while (i < 5);
+    Map boundary;
+    boundary.bl = Point2D(-5, -5);
+    boundary.br = Point2D(5, -5);
+    boundary.tr = Point2D(5, 5);
+    boundary.tl = Point2D(-5, 5);
 
-//     RRTNode start(initial_x_, initial_y_, 0);
-//     RRTNode goal(goal_x_, goal_y_, 0);
-//     std::vector<double> boundary = {-3.1, 3.1};
-//     RRT rrt(start, goal, boundary, obstacleList);
-//     std::vector<Point2d> path = rrt.planning();
-//     std::ofstream outfile("points.csv");
-//     for (const auto &point : path)
-//     {
-//         outfile << point.x << "," << point.y << ", 0" << std::endl;
-//     }
-//     outfile.close();
-//     system("python3 print.py");
-// }
+    RRTNode start(initial_x_, initial_y_, goal_theta_);
+    RRTNode goal(goal_x_, goal_y_, 0);
+    RRT rrt(start, goal, boundary, obstacleList);
+    std::vector<PointDubins> path = rrt.planning();
+    // print last path point
+    cout << path.front().x << "," << path.front().y << " theta" << path.front().theta << endl;
+    cout << path.back().x << "," << path.back().y << " theta" << path.back().theta << endl;
+    // the FIRST point is the new start point
+    RRTNode new_start(path.front().x, path.front().y, path.front().theta);
+    RRTNode new_goal(goal_x_ - 1, goal_y_ - 2, goal_theta_);
+    RRT rrt2(new_start, new_goal, boundary, obstacleList);
+    std::vector<PointDubins> path2 = rrt2.planning();
+    // print first path point
+    cout << path2.front().x << "," << path2.front().y << " theta" << path2.front().theta << endl;
+    cout << path2.back().x << "," << path2.back().y << " theta" << path2.back().theta << endl;
+
+    std::ofstream outfile("points.csv");
+    for (const auto &point : path)
+    {
+        outfile << point.x << "," << point.y << "," << point.theta << std::endl;
+    }
+    for (const auto &point : path2)
+    {
+        outfile << point.x << "," << point.y << "," << point.theta << std::endl;
+    }
+    outfile.close();
+    system("python3 print.py");
+}

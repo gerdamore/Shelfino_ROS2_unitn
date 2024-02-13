@@ -10,18 +10,18 @@ struct Obstacle
     double radius;
 };
 
-struct Point2d
+struct Point2D
 {
     double x;
     double y;
 
-    Point2d(double x, double y)
+    Point2D(double x, double y)
     {
         this->x = x;
         this->y = y;
     }
 
-    Point2d()
+    Point2D()
     {
         this->x = 0;
         this->y = 0;
@@ -30,19 +30,19 @@ struct Point2d
 
 struct Box
 {
-    Point2d bl;
-    Point2d br;
-    Point2d tr;
-    Point2d tl;
+    Point2D bl;
+    Point2D br;
+    Point2D tr;
+    Point2D tl;
     double radius;
 };
 
 struct Map
 {
-    Point2d bl;
-    Point2d br;
-    Point2d tr;
-    Point2d tl;
+    Point2D bl;
+    Point2D br;
+    Point2D tr;
+    Point2D tl;
 };
 
 struct PointDubins
@@ -50,6 +50,18 @@ struct PointDubins
     double x;
     double y;
     double theta;
+    PointDubins(double x, double y, double theta)
+    {
+        this->x = x;
+        this->y = y;
+        this->theta = theta;
+    }
+    PointDubins()
+    {
+        this->x = 0;
+        this->y = 0;
+        this->theta = 0;
+    }
 };
 
 double get_euclidean_distance(double x1, double y1, double x2, double y2);

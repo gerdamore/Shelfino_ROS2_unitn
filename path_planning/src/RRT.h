@@ -13,9 +13,7 @@
 class RRTNode
 {
 public:
-    double yaw;
-    double x;
-    double y;
+    PointDubins point;
     double cost;
     std::vector<double> path_x;
     std::vector<double> path_y;
@@ -32,10 +30,10 @@ public:
 
     void print_node(int ind, RRTNode node);
 
-    std::vector<Point2d> planning();
+    std::vector<PointDubins> planning();
 
 private:
-    std::vector<Point2d> get_final_path(RRTNode node);
+    std::vector<PointDubins> get_final_path(RRTNode node);
 
     RRTNode get_shortest_path();
 

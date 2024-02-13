@@ -58,26 +58,24 @@ struct DubinsPath
 class Dubins
 {
 public:
-    Dubins(Point2d start, Point2d goal, double start_theta, double goal_theta);
+    Dubins(PointDubins start, PointDubins goal);
     DubinsPath get_shortest_path();
     std::vector<PointDubins> get_robot_trajectory(DubinsPath path);
 
 private:
-    Point2d start;
-    Point2d goal;
-    double start_theta;
-    double goal_theta;
-    std::vector<std::pair<Point2d, Point2d>> create_tangent(const Circle &c1, const Circle &c2);
-    DubinsPath get_RSRPath(const std::vector<std::pair<Point2d, Point2d>> &tangent_points, const Circle &start, const Circle &end);
-    DubinsPath get_RSLPath(const std::vector<std::pair<Point2d, Point2d>> &tangent_points, const Circle &start, const Circle &end);
-    DubinsPath get_LSRPath(const std::vector<std::pair<Point2d, Point2d>> &tangent_points, const Circle &start, const Circle &end);
-    DubinsPath get_LSLPath(const std::vector<std::pair<Point2d, Point2d>> &tangent_points, const Circle &start, const Circle &end);
+    PointDubins start;
+    PointDubins goal;
+    std::vector<std::pair<Point2D, Point2D>> create_tangent(const Circle &c1, const Circle &c2);
+    DubinsPath get_RSRPath(const std::vector<std::pair<Point2D, Point2D>> &tangent_points, const Circle &start, const Circle &end);
+    DubinsPath get_RSLPath(const std::vector<std::pair<Point2D, Point2D>> &tangent_points, const Circle &start, const Circle &end);
+    DubinsPath get_LSRPath(const std::vector<std::pair<Point2D, Point2D>> &tangent_points, const Circle &start, const Circle &end);
+    DubinsPath get_LSLPath(const std::vector<std::pair<Point2D, Point2D>> &tangent_points, const Circle &start, const Circle &end);
     DubinsPath get_RLRPath(const Circle &c1, const Circle &c2);
     DubinsPath get_LRLPath(const Circle &c1, const Circle &c2);
     DubinsControl get_right_turn_control(double arc_length);
     DubinsControl get_left_turn_control(double arc_length);
     DubinsControl get_no_turn_control(double arc_length);
-    double get_arc_length(Point2d start, Point2d end, Circle c, bool is_right_turn);
+    double get_arc_length(Point2D start, Point2D end, Circle c, bool is_right_turn);
     DubinsPath get_CCCPath(Circle start_left, Circle start_right, Circle end_left, Circle end_right);
     DubinsPath get_CSCPath(Circle start_left, Circle start_right, Circle end_left, Circle end_right);
 };

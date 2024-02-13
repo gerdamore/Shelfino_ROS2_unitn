@@ -43,7 +43,7 @@ public:
     }
 
 private:
-    std::vector<Point2d> plan_path() const
+    std::vector<Point2D> plan_path() const
     {
     }
 
@@ -75,10 +75,7 @@ private:
         }
 
         RRT rrt(start, goal, map, obstacleList);
-        std::vector<Point2d> RRT_path = rrt.planning();
-
-        
-
+        std::vector<Point2D> RRT_path = rrt.planning();
 
         RCLCPP_INFO(this->get_logger(), "Path planning done");
         nav_msgs::msg::Path full_path;
@@ -91,7 +88,7 @@ private:
         // traverse path backwards to get the correct order
         for (auto it = RRT_path.rbegin(); it != RRT_path.rend(); ++it)
         {
-            Point2d p = *it;
+            Point2D p = *it;
             geometry_msgs::msg::PoseStamped p_tmp;
             p_tmp.header.stamp = this->now();
             p_tmp.header.frame_id = "map";
@@ -160,7 +157,7 @@ private:
         for (const auto &obstacle : msg->obstacles)
         {
             Box obs;
-            Point2d bl, br, tr, tl;
+            Point2D bl, br, tr, tl;
             // points start from bottom left and go clockwise
             bl.x = obstacle.polygon.points[0].x;
             bl.y = obstacle.polygon.points[0].y;
@@ -211,8 +208,8 @@ private:
     rclcpp::Subscription<obstacles_msgs::msg::ObstacleArrayMsg>::SharedPtr subscription_obstacles_;
     rclcpp::Subscription<obstacles_msgs::msg::ObstacleArrayMsg>::SharedPtr subscription_victims_;
     rclcpp::Subscription<geometry_msgs::msg::Polygon>::SharedPtr subscription_map_;
-    Point2d initial_pose_;
-    Point2d goal_pose_;
+    Point2D initial_pose_;
+    Point2D goal_pose_;
     vector<Box> obstacleList;
     vector<Obstacle> victimList;
     Map map;

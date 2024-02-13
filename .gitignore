@@ -7,3 +7,6 @@ tmp*.txt
 build/
 install/
 log/
+
+dubins
+points.csv
