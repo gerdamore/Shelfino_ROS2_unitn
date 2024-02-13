@@ -103,7 +103,6 @@ RRTPath RRT::planning()
     }
 
     final_path.path = get_final_path(shortest);
-    cout << "Get final path" << endl;
     final_path.cost = shortest.cost;
 
     return final_path;
@@ -144,6 +143,9 @@ std::vector<PointDubins> RRT::get_final_path(RRTNode node)
         parent_node = node_list[parent_index];
     }
     path.push_back(start.point);
+    // reverse the order of path
+    std::reverse(path.begin(), path.end());
+
     return path;
 }
 
@@ -276,7 +278,7 @@ std::vector<Obstacle> get_victims(int n)
     std::vector<Obstacle> victimList;
     std::uniform_real_distribution<> x_dis(-5, 5);
     std::uniform_real_distribution<> y_dis(-5, 5);
-    std::uniform_real_distribution<> size_dis(0.5, 1);
+    std::uniform_real_distribution<> size_dis(100, 500);
     std::random_device rd;
     std::mt19937 gen(rd()); // Declare and initialize the random number generator
     int i = 0;
@@ -331,15 +333,6 @@ std::vector<Box> get_obstacle(int n)
     return obstacleList;
 }
 
-RRTPath get_rrt_path(PointDubins start, PointDubins goal, Map boundary, std::vector<Box> obstacleList)
-{
-    RRTNode s(start.x, start.y, start.theta);
-    RRTNode g(goal.x, goal.y, goal.theta);
-    RRT rrt(s, g, boundary, obstacleList);
-    RRTPath path = rrt.planning();
-    return path;
-}
-
 void print_path(RRTPath path)
 {
     // print first path point and last and cost only if cost is not INFINITY
@@ -356,59 +349,78 @@ void print_path(RRTPath path)
     }
 }
 
-int main(int argc, char *argv[])
-{
-    double initial_x_ = 0;
-    double initial_y_ = 0;
-    double goal_x_ = std::stod(argv[1]);
-    double goal_y_ = std::stod(argv[2]);
-    double goal_theta_ = std::stod(argv[3]);
-    PointDubins start(initial_x_, initial_y_, 0);
-    PointDubins goal(goal_x_, goal_y_, goal_theta_);
+// RRTPath get_rrt_path(PointDubins start, PointDubins goal, Map boundary, std::vector<Box> obstacleList)
+// {
+//     RRTNode s(start.x, start.y, start.theta);
+//     RRTNode g(goal.x, goal.y, goal.theta);
+//     RRT rrt(s, g, boundary, obstacleList);
+//     RRTPath path = rrt.planning();
+//     return path;
+// }
 
-    std::vector<Box> obstacleList = get_obstacle(5);
-    std::vector<Obstacle> victimList = get_victims(2);
-    Map boundary = get_map(-5, 5);
-    // print obstacles
-    std::ofstream outfile_obstacle("obstacles.csv");
-    for (auto &obs : obstacleList)
-    {
-        outfile_obstacle << obs.bl.x << "," << obs.bl.y << "," << obs.br.x << "," << obs.br.y << "," << obs.tr.x << "," << obs.tr.y << "," << obs.tl.x << "," << obs.tl.y << "," << obs.radius << std::endl;
-        cout << "Obstacle: bl: x: " << obs.bl.x << ", y: " << obs.bl.y << ", br: x: " << obs.br.x << ", y: " << obs.br.y << ", tr: x: " << obs.tr.x << ", y: " << obs.tr.y << ", tl: x: " << obs.tl.x << ", y: " << obs.tl.y << ", radius: " << obs.radius << endl;
-    }
+// int main(int argc, char *argv[])
+// {
+//     // double initial_x_ = 0;
+//     // double initial_y_ = 0;
+//     // double goal_x_ = std::stod(argv[1]);
+//     // double goal_y_ = std::stod(argv[2]);
+//     // double goal_theta_ = atan2(goal_y_ - initial_y_, goal_x_ - initial_x_);
+//     // PointDubins start(initial_x_, initial_y_, 0);
+//     // PointDubins goal(goal_x_, goal_y_, goal_theta_);
 
-    std::vector<PointDubins> victims;
-    for (const auto &victim : victimList)
-    {
-        PointDubins point(victim.x, victim.y, 0);
-        victims.push_back(point);
-    }
+//     // std::vector<Box> obstacleList = get_obstacle(7);
+//     // std::vector<Obstacle> victimList = get_victims(1);
 
-    std::vector<RRTPath> paths;
-    std::vector<std::pair<PointDubins, PointDubins>> pairsOfPoints;
+//     Map boundary = get_map(-5, 5);
+//     std::vector<Box> obstacleList = {};
+//     Box obs;
+//     Point2D bl, br, tr, tl;
+//     // Add Box: bl: x: 3.220435, y: 0.696474, br: x: 3.220435, y: 1.406717, tr: x: 4.162125, y: 1.406717, tl: x: 4.162125, y: 0.696474
+//     bl.x = 3.220435;
+//     bl.y = 0.696474;
+//     br.x = 3.220435;
+//     br.y = 1.406717;
+//     tr.x = 4.162125;
+//     tr.y = 1.406717;
+//     tl.x = 4.162125;
+//     tl.y = 0.696474;
+//     obs.bl = bl;
+//     obs.br = br;
+//     obs.tr = tr;
+//     obs.tl = tl;
+//     obs.radius = 0.5;
+//     obstacleList.push_back(obs);
 
-    pairsOfPoints.push_back(std::make_pair(start, victims[0]));
-    pairsOfPoints.push_back(std::make_pair(victims[0], victims[1]));
-    pairsOfPoints.push_back(std::make_pair(victims[1], goal));
+//     PointDubins start(0, 0, 0);
+//     PointDubins goal(3.99, 1.35, 0);
+//     start.theta = atan2(goal.y - start.y, goal.x - start.x);
+//     RRTPath path = get_rrt_path(start, goal, boundary, obstacleList);
+//     print_path(path);
+//     vector<PointDubins> min_path = path.path;
+//     // print obstacles to obstacles.csv
+//     // // print obstacles
+//     std::ofstream outfile_obstacle("obstacles.csv");
+//     for (auto &obs : obstacleList)
+//     {
+//         outfile_obstacle << obs.bl.x << "," << obs.bl.y << "," << obs.br.x << "," << obs.br.y << "," << obs.tr.x << "," << obs.tr.y << "," << obs.tl.x << "," << obs.tl.y << "," << obs.radius << std::endl;
+//     }
+//     outfile_obstacle.close();
+//     // // print victims
+//     // for (auto &victim : victimList)
+//     // {
+//     //     cout << "Victim: x: " << victim.x << ", y: " << victim.y << ", radius: " << victim.radius << endl;
+//     // }
 
-    double new_theta = 0;
-    std::ofstream outfile("points.csv");
-    for (auto pair : pairsOfPoints)
-    {
-        pair.first.theta = new_theta;
-        RRTPath path = get_rrt_path(pair.first, pair.second, boundary, obstacleList);
-        if (path.cost != INFINITY)
-        {
-            new_theta = path.path[0].theta;
-            paths.push_back(path);
-            print_path(path);
-            for (const auto &point : path.path)
-            {
-                outfile << point.x << "," << point.y << "," << point.theta << std::endl;
-            }
-        }
-    }
+//     // vector<PointDubins> min_path = get_best_path(start, goal, boundary, obstacleList, victimList);
 
-    outfile.close();
-    system("python3 print.py");
-}
+//     // double new_theta = 0;
+//     std::ofstream outfile("points.csv");
+
+//     for (const auto &point : min_path)
+//     {
+//         outfile << point.x << "," << point.y << "," << point.theta << std::endl;
+//     }
+
+//     outfile.close();
+//     system("python3 print.py");
+// }

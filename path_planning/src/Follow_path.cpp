@@ -43,52 +43,13 @@ public:
     }
 
 private:
-    std::vector<Point2D> plan_path() const
+    std::vector<geometry_msgs::msg::PoseStamped> get_poses_from_rrtpath(vector<PointDubins> path) const
     {
-    }
-
-    void topic_callback(const std_msgs::msg::String::SharedPtr msg) const
-    {
-
-        RCLCPP_INFO(this->get_logger(), "Start path planning");
-        RRTNode start(initial_pose_.x, initial_pose_.y, 0);
-        RRTNode goal(goal_pose_.x, goal_pose_.y, 0);
-        std::vector<double> boundary = {-5, 5};
-        // print start goal boundary obstacles list
-        RCLCPP_INFO(this->get_logger(), "Start: x: %f, y: %f", start.x, start.y);
-        RCLCPP_INFO(this->get_logger(), "Goal: x: %f, y: %f", goal.x, goal.y);
-        RCLCPP_INFO(this->get_logger(), "Map: bl: x: %f, y: %f, br: x: %f, y: %f, tr: x: %f, y: %f, tl: x: %f, y: %f", map.bl.x, map.bl.y, map.br.x, map.br.y, map.tr.x, map.tr.y, map.tl.x, map.tl.y);
-        for (auto &obs : obstacleList)
-        {
-            RCLCPP_INFO(this->get_logger(), "Obstacle: bl: x: %f, y: %f, br: x: %f, y: %f, tr: x: %f, y: %f, tl: x: %f, y: %f, radius: %f", obs.bl.x, obs.bl.y, obs.br.x, obs.br.y, obs.tr.x, obs.tr.y, obs.tl.x, obs.tl.y, obs.radius);
-        }
-        for (auto &obs : victimList)
-        {
-            RCLCPP_INFO(this->get_logger(), "Victim: x: %f, y: %f", obs.x, obs.y);
-        }
-
-        // set goal to first victim
-        if (victimList.size() > 0)
-        {
-            goal.x = victimList[0].x;
-            goal.y = victimList[0].y;
-        }
-
-        RRT rrt(start, goal, map, obstacleList);
-        std::vector<Point2D> RRT_path = rrt.planning();
-
-        RCLCPP_INFO(this->get_logger(), "Path planning done");
-        nav_msgs::msg::Path full_path;
-        full_path.header.stamp = this->now();
-        full_path.header.frame_id = "map";
-        std::vector<geometry_msgs::msg::PoseStamped> poses_temp;
-
+        std::vector<geometry_msgs::msg::PoseStamped> poses;
         std::ofstream outfile("points.csv");
-
         // traverse path backwards to get the correct order
-        for (auto it = RRT_path.rbegin(); it != RRT_path.rend(); ++it)
+        for (PointDubins p : path)
         {
-            Point2D p = *it;
             geometry_msgs::msg::PoseStamped p_tmp;
             p_tmp.header.stamp = this->now();
             p_tmp.header.frame_id = "map";
@@ -100,14 +61,139 @@ private:
             p_tmp.pose.orientation.z = 0.0;
             p_tmp.pose.orientation.w = 1.0;
             outfile << p.x << "," << p.y << ", 0" << std::endl;
-            poses_temp.push_back(p_tmp);
+            cout << p.x << "," << p.y << ", 0" << std::endl;
+            poses.push_back(p_tmp);
         }
 
         outfile.close();
-        system("python3 print.py");
+        return poses;
+    }
 
-        full_path.poses = poses_temp;
-        RCLCPP_INFO(this->get_logger(), "Created path");
+    vector<vector<Obstacle>> generate_combinations(const vector<Obstacle> &array) const
+    {
+        vector<vector<Obstacle>> result;
+        size_t n = array.size();
+        for (size_t i = 0; i < (1 << n); ++i)
+        {
+            vector<Obstacle> combination;
+            for (size_t j = 0; j < n; ++j)
+            {
+                if (i & (1 << j))
+                {
+                    combination.push_back(array[j]);
+                }
+            }
+            result.push_back(combination);
+        }
+        return result;
+    }
+
+    RRTPath get_rrt_path(PointDubins start, PointDubins goal, Map boundary, std::vector<Box> obstacleList) const
+    {
+        RRTNode s(start.x, start.y, start.theta);
+        RRTNode g(goal.x, goal.y, goal.theta);
+        RRT rrt(s, g, boundary, obstacleList);
+        RRTPath path = rrt.planning();
+        return path;
+    }
+
+    vector<PointDubins> get_best_path(PointDubins start, PointDubins end, Map map, vector<Box> obstacleList, vector<Obstacle> victimList) const
+    {
+        double max_ratio = 0;
+        std::vector<PointDubins> min_path;
+        vector<vector<Obstacle>> combinations = generate_combinations(victimList);
+        for (auto &combination : combinations)
+        {
+            double sum_weight = 0;
+            vector<PointDubins> points_trajectory;
+            points_trajectory.push_back(start);
+            for (auto &victim : combination)
+            {
+                points_trajectory.push_back(PointDubins(victim.x, victim.y, 0));
+                sum_weight += victim.radius;
+            }
+            points_trajectory.push_back(end);
+            std::vector<PointDubins> current_path;
+            double sum_cost = 0;
+            points_trajectory[0].theta = atan2(points_trajectory[1].y - points_trajectory[0].y, points_trajectory[1].x - points_trajectory[0].x);
+            for (int i = 0; i < points_trajectory.size() - 1; i++)
+            {
+                cout << "Path: " << i << " x: " << points_trajectory[i].x << " y: " << points_trajectory[i].y << " theta: " << points_trajectory[i].theta << " to x: " << points_trajectory[i + 1].x << " y: " << points_trajectory[i + 1].y << " theta: " << points_trajectory[i + 1].theta << endl;
+                RRTPath rrt_path = get_rrt_path(points_trajectory[i], points_trajectory[i + 1], map, obstacleList);
+                if (rrt_path.cost == INFINITY)
+                {
+                    sum_cost = INFINITY;
+                    break;
+                }
+
+                points_trajectory[i + 1].theta = rrt_path.path.end()->theta;
+                cout << "Cost: " << rrt_path.cost << endl;
+                sum_cost += rrt_path.cost;
+                for (auto &p : rrt_path.path)
+                {
+                    current_path.push_back(p);
+                }
+            }
+
+            if (sum_cost != INFINITY)
+            {
+                cout << "Sum cost: " << sum_cost << endl;
+
+                cout << "Ratio: " << sum_weight / sum_cost << endl;
+                if (sum_weight / sum_cost > max_ratio)
+                {
+                    max_ratio = sum_weight / sum_cost;
+                    min_path = current_path;
+                }
+            }
+        }
+        cout << "Size :" << min_path.size() << std::endl;
+        return min_path;
+    }
+
+    void topic_callback(const std_msgs::msg::String::SharedPtr msg) const
+    {
+
+        RRTNode start(initial_pose_.x, initial_pose_.y, 0);
+        RRTNode goal(goal_pose_.x, goal_pose_.y, 0);
+
+        // print start goal boundary obstacles list
+        RCLCPP_INFO(this->get_logger(), "Start: x: %f, y: %f", start.point.x, start.point.y);
+        RCLCPP_INFO(this->get_logger(), "Goal: x: %f, y: %f", goal.point.x, goal.point.y);
+        RCLCPP_INFO(this->get_logger(), "Map: bl: x: %f, y: %f, br: x: %f, y: %f, tr: x: %f, y: %f, tl: x: %f, y: %f", map.bl.x, map.bl.y, map.br.x, map.br.y, map.tr.x, map.tr.y, map.tl.x, map.tl.y);
+        for (auto &obs : obstacleList)
+        {
+            RCLCPP_INFO(this->get_logger(), "Obstacle: bl: x: %f, y: %f, br: x: %f, y: %f, tr: x: %f, y: %f, tl: x: %f, y: %f", obs.bl.x, obs.bl.y, obs.br.x, obs.br.y, obs.tr.x, obs.tr.y, obs.tl.x, obs.tl.y);
+        }
+        for (auto &obs : victimList)
+        {
+            RCLCPP_INFO(this->get_logger(), "Victim: x: %f, y: %f weight:%f", obs.x, obs.y, obs.radius);
+        }
+
+        std::ofstream outfile_obstacle("obstacles.csv");
+        for (auto &obs : obstacleList)
+        {
+            outfile_obstacle << obs.bl.x << "," << obs.bl.y << "," << obs.br.x << "," << obs.br.y << "," << obs.tr.x << "," << obs.tr.y << "," << obs.tl.x << "," << obs.tl.y << "," << obs.radius << std::endl;
+        }
+        outfile_obstacle.close();
+
+        std::ofstream outfile_victim("victims.csv");
+        for (auto &obs : victimList)
+        {
+            outfile_victim << obs.x << "," << obs.y << std::endl;
+        }
+        outfile_obstacle.close();
+
+        RCLCPP_INFO(this->get_logger(), "Start path planning");
+        vector<PointDubins> RRT_path = get_best_path(start.point, goal.point, map, obstacleList, victimList);
+
+        nav_msgs::msg::Path full_path;
+        full_path.header.stamp = this->now();
+        full_path.header.frame_id = "map";
+
+        std::vector<geometry_msgs::msg::PoseStamped> poses = get_poses_from_rrtpath(RRT_path);
+        cout << "Poses size: " << poses.size() << endl;
+        full_path.poses = poses;
         RCLCPP_INFO(this->get_logger(), "Connect to server");
         if (!this->client_ptr_->wait_for_action_server())
         {
@@ -119,6 +205,8 @@ private:
         goal_msg.path = full_path;
         goal_msg.controller_id = "FollowPath";
         RCLCPP_INFO(this->get_logger(), "Sending msg");
+
+        system("python3 print.py");
         this->client_ptr_->async_send_goal(goal_msg);
     }
 
@@ -128,15 +216,6 @@ private:
         {
             goal_pose_.x = pose.position.x;
             goal_pose_.y = pose.position.y;
-            // if (goal_pose_.x < 0)
-            //     goal_pose_.x += 0.5;
-            // else
-            //     goal_pose_.x -= 0.5;
-
-            // if (goal_pose_.y < 0)
-            //     goal_pose_.y += 0.5;
-            // else
-            //     goal_pose_.y -= 0.5;
 
             RCLCPP_INFO(this->get_logger(), "Goal pose - x: %f, y: %f", goal_pose_.x, goal_pose_.y);
         }
@@ -147,7 +226,6 @@ private:
         initial_pose_.x = msg->pose.pose.position.x;
         initial_pose_.y = msg->pose.pose.position.y;
 
-        // Print the x, y coordinates
         RCLCPP_INFO(get_logger(), "Received pose - x: %f, y: %f", initial_pose_.x, initial_pose_.y);
     }
 

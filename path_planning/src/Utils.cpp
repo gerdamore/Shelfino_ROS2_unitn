@@ -1,4 +1,7 @@
 #include "Utils.h"
+#include <cmath>
+#include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -14,11 +17,13 @@ double get_euclidean_distance(double x1, double y1, double x2, double y2)
 bool is_collision(double x, double y, Box obstacle)
 {
     // points start from bottom left and go clockwise
-    if (x >= obstacle.tl.x && x <= obstacle.tr.x && y >= obstacle.bl.y && y <= obstacle.tl.y)
+    //cout << x << " < " << obstacle.tr.x << " && " << x << ">" << obstacle.tl.x << " && " << y << " < " << obstacle.tr.y << " && " << y << " > " << obstacle.br.y << endl;
+    //cout << (x < obstacle.tr.x && x > obstacle.tl.x && y < obstacle.tr.y && y > obstacle.br.y) << endl;
+    if (x < obstacle.tr.x && x > obstacle.tl.x && y < obstacle.tr.y && y > obstacle.br.y)
     {
-        printf("%f >= %f && %f <= %f && %f >= %f && %f <= %f\n", x, obstacle.tl.x, x, obstacle.tr.x, y, obstacle.bl.y, y, obstacle.tl.y);
         return true;
     }
+
     return false;
 }
 

@@ -24,6 +24,14 @@ with open('obstacles.csv', 'r') as csvfile:
         # Storing all points
         obstacle_points.append((bottom_left, top_left, top_right, bottom_right))
 
+# Read victim points from the file
+victim_points = []
+with open('victims.csv', 'r') as csvfile:
+    csvreader = csv.reader(csvfile)
+    for row in csvreader:
+        x, y = map(float, row)
+        victim_points.append((x, y))
+
 # Plot trajectory points
 x_values_traj = [point[0] for point in trajectory_points]
 y_values_traj = [point[1] for point in trajectory_points]
@@ -37,8 +45,13 @@ for obstacle in obstacle_points:
     y_values_obst = [bottom_left[1], top_left[1], top_right[1], bottom_right[1], bottom_left[1]]
     plt.plot(x_values_obst, y_values_obst, 'b-')  # Plot obstacle as a blue rectangle
 
+# Plot victim points
+x_values_victim = [point[0] for point in victim_points]
+y_values_victim = [point[1] for point in victim_points]
+plt.plot(x_values_victim, y_values_victim, 'gx')  # Plot victim points as green crosses
+
 plt.xlabel('X')
 plt.ylabel('Y')
-plt.title('Trajectory with Obstacles')
+plt.title('Trajectory with Obstacles and Victims')
 plt.grid(True)
 plt.show()
