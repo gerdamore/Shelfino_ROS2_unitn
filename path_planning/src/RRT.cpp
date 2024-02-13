@@ -53,20 +53,19 @@ void RRT::print_node(int ind, RRTNode node)
     // cout << endl;
 }
 
-bool RRT::is_collision(RRTNode node)
+bool RRT::check_collision(RRTNode node)
 {
     for (const auto &obstacle : obstacleList)
     {
         // check collision accross path_x and path_y of node
         for (int i = 0; i < node.path_x.size(); i++)
         {
-            if (check_collision(node.path_x[i], node.path_y[i], obstacle) && check_inside_map(node.path_x[i], node.path_y[i], map))
+            if (is_collision(node.path_x[i], node.path_y[i], obstacle) && !is_inside_map(node.path_x[i], node.path_y[i], map))
             {
                 return true;
             }
         }
     }
-
     return false;
 }
 
@@ -79,7 +78,7 @@ RRTPath RRT::planning()
         int nearest_ind = get_closest_index(rnd);
         RRTNode new_node = get_path(&node_list[nearest_ind], rnd, nearest_ind);
 
-        if (is_collision(new_node))
+        if (check_collision(new_node))
         {
             continue;
         }
@@ -89,7 +88,7 @@ RRTPath RRT::planning()
     // if possible just have one Dubins path to the goal
     RRTNode Dubins_node = get_path(&start, end, 0);
     // print_node(-1, Dubins_node);
-    if (!is_collision(Dubins_node))
+    if (!check_collision(Dubins_node))
     {
         // cout << "Dubins path to goal found!" << endl;
         node_list.push_back(Dubins_node);
@@ -311,7 +310,7 @@ std::vector<Box> get_obstacle(int n)
     std::vector<Box> obstacleList;
     std::uniform_real_distribution<> x_dis(-5, 5);
     std::uniform_real_distribution<> y_dis(-5, 5);
-    std::uniform_real_distribution<> size_dis(0.5, 1);
+    std::uniform_real_distribution<> size_dis(0, 0.5);
     std::random_device rd;
     std::mt19937 gen(rd()); // Declare and initialize the random number generator
     int i = 0;

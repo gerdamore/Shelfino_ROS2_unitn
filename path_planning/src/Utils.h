@@ -67,8 +67,8 @@ struct PointDubins
 
 double get_euclidean_distance(double x1, double y1, double x2, double y2);
 
-bool check_collision(double x, double y, Box obstacle);
+bool is_collision(double x, double y, Box obstacle);
 
-bool check_inside_map(double x, double y, Map map);
+bool is_inside_map(double x, double y, Map map);
 
 #endif // UTILS_H

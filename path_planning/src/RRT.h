@@ -55,7 +55,7 @@ private:
 
     int get_closest_index(RRTNode rnd_node);
 
-    bool is_collision(RRTNode node);
+    bool check_collision(RRTNode node);
 
     RRTNode start;
     RRTNode end;

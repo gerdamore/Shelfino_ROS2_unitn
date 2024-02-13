@@ -11,7 +11,7 @@ double get_euclidean_distance(double x1, double y1, double x2, double y2)
 
 #include <cstdio> // Include the necessary header file for printf
 
-bool check_collision(double x, double y, Box obstacle)
+bool is_collision(double x, double y, Box obstacle)
 {
     // points start from bottom left and go clockwise
     if (x >= obstacle.tl.x && x <= obstacle.tr.x && y >= obstacle.bl.y && y <= obstacle.tl.y)
@@ -22,7 +22,7 @@ bool check_collision(double x, double y, Box obstacle)
     return false;
 }
 
-bool check_inside_map(double x, double y, Map map)
+bool is_inside_map(double x, double y, Map map)
 {
     if (x >= map.bl.x && x <= map.br.x && y >= map.bl.y && y <= map.tl.y)
     {
