@@ -1,23 +1,44 @@
 import matplotlib.pyplot as plt
 import csv
+from matplotlib.patches import Rectangle
 
-# Read points from the file
-points = []
+# Read trajectory points from the file
+trajectory_points = []
 with open('points.csv', 'r') as csvfile:
     csvreader = csv.reader(csvfile)
     for row in csvreader:
         x, y, theta = map(float, row)
-        points.append((x, y))
+        trajectory_points.append((x, y))
 
-# Plot points
-x_values = [point[0] for point in points]
-y_values = [point[1] for point in points]
+# Read obstacle points from the file
+obstacle_points = []
+with open('obstacles.csv', 'r') as csvfile:
+    csvreader = csv.reader(csvfile)
+    for row in csvreader:
+        x_bl, y_bl, x_br, y_br, x_tr, y_tr, x_tl, y_tl, radius = map(float, row)
+        # Extracting points for the box
+        bottom_left = (x_bl, y_bl)
+        top_left = (x_tl, y_tl)
+        top_right = (x_tr, y_tr)
+        bottom_right = (x_br, y_br)
+        # Storing all points
+        obstacle_points.append((bottom_left, top_left, top_right, bottom_right))
 
-plt.plot(x_values, y_values, 'ro')  # Plot points as red dots
+# Plot trajectory points
+x_values_traj = [point[0] for point in trajectory_points]
+y_values_traj = [point[1] for point in trajectory_points]
+
+plt.plot(x_values_traj, y_values_traj, 'ro')  # Plot trajectory points as red dots
+
+# Plot obstacle points
+for obstacle in obstacle_points:
+    bottom_left, top_left, top_right, bottom_right = obstacle
+    x_values_obst = [bottom_left[0], top_left[0], top_right[0], bottom_right[0], bottom_left[0]]
+    y_values_obst = [bottom_left[1], top_left[1], top_right[1], bottom_right[1], bottom_left[1]]
+    plt.plot(x_values_obst, y_values_obst, 'b-')  # Plot obstacle as a blue rectangle
+
 plt.xlabel('X')
 plt.ylabel('Y')
-plt.title('Trajectory')
+plt.title('Trajectory with Obstacles')
 plt.grid(True)
 plt.show()
-
-

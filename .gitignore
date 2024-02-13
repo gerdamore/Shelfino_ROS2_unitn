@@ -10,3 +10,5 @@ log/
 
 dubins
 points.csv
+obstacles.csv
+```
