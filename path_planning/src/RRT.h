@@ -10,6 +10,18 @@
 #define MAX_ITER 300
 #define GOAL_PROBABILITY 10
 
+struct RRTPath
+{
+    double cost;
+    std::vector<PointDubins> path;
+
+    RRTPath()
+    {
+        cost = INFINITY;
+        path = {};
+    }
+};
+
 class RRTNode
 {
 public:
@@ -30,7 +42,7 @@ public:
 
     void print_node(int ind, RRTNode node);
 
-    std::vector<PointDubins> planning();
+    RRTPath planning();
 
 private:
     std::vector<PointDubins> get_final_path(RRTNode node);

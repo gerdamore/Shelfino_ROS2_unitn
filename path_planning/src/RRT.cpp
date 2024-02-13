@@ -70,7 +70,7 @@ bool RRT::is_collision(RRTNode node)
     return false;
 }
 
-std::vector<PointDubins> RRT::planning()
+RRTPath RRT::planning()
 {
     for (int i = 0; i < 20 - 1; i++)
     {
@@ -88,20 +88,23 @@ std::vector<PointDubins> RRT::planning()
 
     // if possible just have one Dubins path to the goal
     RRTNode Dubins_node = get_path(&start, end, 0);
-    print_node(-1, Dubins_node);
+    //print_node(-1, Dubins_node);
     if (!is_collision(Dubins_node))
     {
-        cout << "Dubins path to goal found!" << endl;
+        //cout << "Dubins path to goal found!" << endl;
         node_list.push_back(Dubins_node);
     }
 
     RRTNode shortest = get_shortest_path();
+    RRTPath final_path = RRTPath();
     if (shortest.point.x == 0 && shortest.point.y == 0)
     {
         cout << "No path found!" << endl;
-        return {};
+        return final_path;
     }
-    return get_final_path(shortest);
+    final_path.path = get_final_path(shortest);
+    final_path.cost = shortest.cost;
+    return final_path;
 }
 
 std::vector<PointDubins> RRT::get_final_path(RRTNode node)
@@ -150,7 +153,6 @@ RRTNode RRT::get_shortest_path()
     {
         const RRTNode node = node_list[i];
         double distance = get_euclidean_distance(node.point.x, node.point.y, end.point.x, end.point.y);
-        cout << "distance:" << distance << endl;
         if (distance <= 0.2)
         {
             goal_indexes.push_back(i);
@@ -300,25 +302,27 @@ int main(int argc, char *argv[])
     RRTNode start(initial_x_, initial_y_, goal_theta_);
     RRTNode goal(goal_x_, goal_y_, 0);
     RRT rrt(start, goal, boundary, obstacleList);
-    std::vector<PointDubins> path = rrt.planning();
+    RRTPath path = rrt.planning();
     // print last path point
-    cout << path.front().x << "," << path.front().y << " theta" << path.front().theta << endl;
-    cout << path.back().x << "," << path.back().y << " theta" << path.back().theta << endl;
+    cout << path.path.front().x << "," << path.path.front().y << " theta" << path.path.front().theta << endl;
+    cout << path.path.back().x << "," << path.path.back().y << " theta" << path.path.back().theta << endl;
+    cout << "cost path" << path.cost << endl;
     // the FIRST point is the new start point
-    RRTNode new_start(path.front().x, path.front().y, path.front().theta);
+    RRTNode new_start(path.path.front().x, path.path.front().y, path.path.front().theta);
     RRTNode new_goal(goal_x_ - 1, goal_y_ - 2, goal_theta_);
     RRT rrt2(new_start, new_goal, boundary, obstacleList);
-    std::vector<PointDubins> path2 = rrt2.planning();
+    RRTPath path2 = rrt2.planning();
     // print first path point
-    cout << path2.front().x << "," << path2.front().y << " theta" << path2.front().theta << endl;
-    cout << path2.back().x << "," << path2.back().y << " theta" << path2.back().theta << endl;
+    cout << path2.path.front().x << "," << path2.path.front().y << " theta" << path2.path.front().theta << endl;
+    cout << path2.path.back().x << "," << path2.path.back().y << " theta" << path2.path.back().theta << endl;
+    cout << "cost path2" << path2.cost << endl;
 
     std::ofstream outfile("points.csv");
-    for (const auto &point : path)
+    for (const auto &point : path.path)
     {
         outfile << point.x << "," << point.y << "," << point.theta << std::endl;
     }
-    for (const auto &point : path2)
+    for (const auto &point : path2.path)
     {
         outfile << point.x << "," << point.y << "," << point.theta << std::endl;
     }
